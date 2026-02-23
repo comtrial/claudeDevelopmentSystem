@@ -95,7 +95,7 @@ export function LogViewer({ pipelineId, fetchInitial = true }: LogViewerProps) {
           }
         }
       })
-      .catch(() => {/* silently ignore initial fetch errors */});
+      .catch((err) => { console.error("Failed to fetch initial logs:", err); });
   }, [pipelineId, fetchInitial, appendLog]);
 
   // Derive unique agent roles for filter dropdown

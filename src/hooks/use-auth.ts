@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export function useAuth() {
   const router = useRouter();
-  const { setUser, clearUser } = useAuthStore();
+  const { clearUser } = useAuthStore();
 
   const signIn = async (email: string, password: string) => {
     const supabase = createClient();

@@ -42,9 +42,22 @@ export function ReviewActions({ pipelineId, changeId, currentStatus, onStatusCha
           body: JSON.stringify({ action, comment }),
         }
       );
-      const json = await res.json();
+
+      let json: Record<string, unknown>;
+      try {
+        json = await res.json();
+      } catch {
+        setError("응답을 파싱할 수 없습니다.");
+        return;
+      }
+
       if (json.error) {
-        setError(json.error.message ?? "요청 실패");
+        const errObj = json.error as Record<string, unknown> | null;
+        const message =
+          errObj && typeof errObj === "object" && typeof errObj.message === "string"
+            ? errObj.message
+            : "요청 실패";
+        setError(message);
         return;
       }
       const statusMap: Record<string, string> = {
@@ -53,8 +66,10 @@ export function ReviewActions({ pipelineId, changeId, currentStatus, onStatusCha
         reject: "rejected",
       };
       onStatusChange?.(statusMap[action] ?? action);
-    } catch {
-      setError("서버 오류가 발생했습니다.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "서버 오류가 발생했습니다.";
+      setError(message);
     } finally {
       setLoading(null);
     }

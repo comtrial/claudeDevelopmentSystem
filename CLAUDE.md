@@ -25,15 +25,19 @@ src/
 │   ├── (auth)/login/page.tsx, signup/page.tsx
 │   ├── (dashboard)/
 │   │   ├── dashboard/page.tsx
+│   │   ├── pipelines/page.tsx           # Pipeline list
 │   │   ├── pipelines/new/page.tsx       # Wizard
 │   │   ├── pipelines/[id]/page.tsx      # Monitoring
-│   │   ├── pipelines/[id]/review/page.tsx # Code Review
+│   │   ├── pipelines/[id]/monitor/      # Monitor sub-route
+│   │   ├── pipelines/[id]/review/       # Code Review
 │   │   ├── history/page.tsx
 │   │   ├── history/[id]/page.tsx
 │   │   └── settings/page.tsx
 │   └── api/
 │       ├── pipelines/route.ts           # GET list, POST create
 │       ├── pipelines/parse/route.ts     # POST NLP parse
+│       ├── pipelines/clone/route.ts     # POST clone pipeline
+│       ├── pipelines/history/route.ts   # GET completed pipelines
 │       ├── pipelines/[id]/route.ts      # GET detail
 │       ├── pipelines/[id]/execute/route.ts
 │       ├── pipelines/[id]/pause/route.ts
@@ -41,18 +45,24 @@ src/
 │       ├── pipelines/[id]/cancel/route.ts
 │       ├── pipelines/[id]/logs/route.ts
 │       ├── pipelines/[id]/changes/route.ts
-│       ├── pipelines/history/route.ts
+│       ├── pipelines/[id]/rerun/route.ts
+│       ├── pipelines/[id]/review/approve-all/
+│       ├── pipelines/[id]/sessions/route.ts
+│       ├── history/[id]/route.ts
 │       ├── sessions/[id]/route.ts
-│       ├── sessions/[id]/tokens/route.ts
-│       └── settings/route.ts
+│       ├── settings/route.ts
+│       └── templates/route.ts
 ├── components/
 │   ├── ui/          # shadcn/ui components
+│   ├── auth/        # Auth components
 │   ├── wizard/      # Sprint 2: Wizard components
 │   ├── pipeline/    # Sprint 3: Monitoring components
 │   ├── review/      # Sprint 4: Code review components
 │   ├── dashboard/   # Dashboard components
-│   └── layout/      # Layout components
+│   ├── layout/      # Layout components
+│   └── providers/   # Context providers
 ├── stores/
+│   ├── auth-store.ts
 │   ├── wizard-store.ts
 │   ├── pipeline-store.ts
 │   └── ui-store.ts
@@ -60,10 +70,15 @@ src/
 │   ├── supabase/client.ts, server.ts, middleware.ts
 │   ├── api/auth.ts, response.ts, errors.ts
 │   ├── realtime/use-pipeline-realtime.ts
-│   └── pipeline/simulator.ts
+│   ├── pipeline/simulator.ts, sample-data.ts
+│   ├── review/handle-review-result.ts
+│   ├── simulator/agent-simulator.ts
+│   └── websocket/
 └── types/
-    ├── wizard.ts
-    └── pipeline.ts
+    ├── wizard.ts, pipeline.ts, agent.ts
+    ├── session.ts, api.ts, template.ts
+    ├── pipeline-summary.ts
+    └── websocket.ts
 ```
 
 ## API Response Format
@@ -100,35 +115,39 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
 - Use `cn()` from `@/lib/utils` for className merging
 
 ## Learnings
-(Updated automatically during sprint execution)
-- Sprint 2 Fix: Replaced Claude API direct call with CLI spawn (child_process.spawn).
-  Key pattern: claude -p "prompt" --output-format json --max-turns 1 --model sonnet
-- Sprint 3: Supabase Realtime uses `.channel(name).on('postgres_changes', {...}).subscribe()`.
-  Cannot filter agent_logs by pipeline_id directly (no join). Use metadata field instead.
-- Sprint 3: @tanstack/react-virtual v3 — use `useVirtualizer` hook. React Compiler emits
-  "incompatible library" warning (expected, not a build error).
-- Sprint 3: ESLint react-hooks/set-state-in-effect — defer setState with setTimeout 0 when
-  called inside useEffect body as workaround. Or initialize state to correct value.
-- Sprint 3: Supabase Realtime channels must be cleaned up via supabase.removeChannel(ch).
-- Sprint 3: Pipeline monitoring page is at pipelines/[id]/page.tsx. The monitor/page.tsx
-  stub was left from Sprint 2 WIP.
-- Sprint 4: Use `parsePatch` from the `diff` npm package to parse unified diff format into
-  hunks. Import: `import { parsePatch } from 'diff'`. Install types: `@types/diff`.
-- Sprint 4: Skipped async shiki in favor of regex-based inline tokenization to avoid
-  hydration issues and async complexity in client components.
-- Sprint 4: `code_change_comments` table may not exist yet — handle with Postgres error
-  code `42P01` (undefined_table) and return empty array gracefully.
-- Sprint 4: `handleReviewResult` queries latest session by pipeline_id first, since
-  code_changes are keyed on session_id (not pipeline_id directly).
-- Sprint 4: Review page uses flex-col + flex-1 + overflow-hidden for sticky header/footer
-  with scrollable diff area. API routes for changes: nested under pipelines/[id]/changes/.
-- Sprint 5: History list/detail APIs at /api/pipelines/history/ (not /api/history/) query
-  the `pipelines` table directly filtering status IN ('completed','failed','cancelled').
-- Sprint 5: Settings API (GET) creates default settings if none exist; PATCH deep-merges
-  the `settings` JSONB field. Check for PGRST116 (no rows) not as an error.
-- Sprint 5: Rerun route copies pipeline + agents + tasks as new draft; appends "(재실행)"
-  to title. Redirect to /pipelines/new?pipeline={newId} for wizard pre-fill.
-- Sprint 5: Settings page uses next-themes `useTheme` for live color mode switching.
-  Slider uses onValueCommit (not onChange) for API persistence to avoid excessive calls.
-- Sprint 5: MVP Phase 0→1→2→3→4→5→6→0 cycle complete. Dashboard RecentHistory was already
-  implemented; FE-5.4 confirmed working. shadcn slider/table/pagination added in this sprint.
+
+### Sprint 2 Fix
+- Replaced Claude API direct call (`api.anthropic.com`) with CLI spawn (`child_process.spawn`).
+- Key CLI pattern: `claude -p "prompt" --output-format json --max-turns 1 --model sonnet`
+- No API key needed — CLI uses local Claude Max authentication.
+
+### Sprint 3 (Monitoring + Realtime)
+- Supabase Realtime: Subscribe to 3 channels (pipeline/agents/logs) with cleanup on unmount.
+- `@tanstack/react-virtual` useVirtualizer triggers React Compiler warning — safe to ignore.
+- Session gauge 4-color policy: use refs to prevent duplicate toast/modal firing.
+- Pipeline store log buffer capped at 2000 entries to prevent memory leaks.
+
+### Sprint 4 (Code Review Diff)
+- `diff` npm package `parsePatch()` for unified diff parsing.
+- Syntax highlighting: regex-based tokenizer (lightweight) instead of full shiki for MVP.
+- Line comment UX: Popover on hover button click, not inline expansion.
+- Review state machine: pending → approved/changes_requested/rejected.
+
+### Sprint 5 (History + Settings)
+- History pagination: offset-based (page/limit) for list, cursor-based for logs.
+- Settings: Zustand persist for local + Supabase sync for cross-device.
+- Dashboard return loop: Phase 6→0 via "대시보드로" button + recent history section.
+- MVP full cycle: Phase 0→1→2→3→4→5→6→0 complete.
+
+### Code Quality Patterns
+- All API routes MUST use `getAuthenticatedUser()` from `@/lib/api/auth` (not `createClient()` directly).
+- All responses MUST use `successResponse()` / `handleError()` from `@/lib/api/response`.
+- Avoid bare `as` type assertions — use validation or type guards.
+- Remove debug `console.log` before committing.
+- Prefix unused variables with `_` to satisfy ESLint.
+
+### Architecture Principles (CRITICAL)
+- **Never** call `api.anthropic.com` — always use `child_process.spawn("claude", [...])`.
+- localhost:3000 execution only — not Vercel serverless.
+- Claude Max subscription = $0 API cost.
+- Hybrid storage: local MD/JSON (running) + Supabase (completed).

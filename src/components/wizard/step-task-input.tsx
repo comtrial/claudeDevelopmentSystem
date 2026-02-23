@@ -23,7 +23,6 @@ export function StepTaskInput() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const tasks = useWizardStore((s) => s.tasks);
   const setTasks = useWizardStore((s) => s.setTasks);
   const setRecommendation = useWizardStore((s) => s.setRecommendation);
 

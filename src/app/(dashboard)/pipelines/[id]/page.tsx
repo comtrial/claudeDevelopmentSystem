@@ -191,10 +191,8 @@ export default function PipelineMonitorPage() {
               <AgentStatusCard
                 key={agent.id}
                 agent={agent}
-                onViewLogs={(agentId) => {
+                onViewLogs={() => {
                   setShowLogs(true);
-                  // Log viewer will filter by agentId when shown
-                  console.log("View logs for agent:", agentId);
                 }}
               />
             ))}

@@ -76,7 +76,17 @@ export default function ReviewPage() {
           setError(res.error.message as string);
           return;
         }
-        const list = (res.data ?? []) as FileChange[];
+        const rawList = res.data;
+        const list: FileChange[] = Array.isArray(rawList)
+          ? rawList.filter(
+              (item: unknown): item is FileChange =>
+                typeof item === "object" &&
+                item !== null &&
+                "id" in item &&
+                "file_path" in item &&
+                "change_type" in item
+            )
+          : [];
         setChanges(list);
         if (list.length > 0) {
           setActiveChangeId(list[0].id);
@@ -95,8 +105,11 @@ export default function ReviewPage() {
     fetch(`/api/pipelines/${pipelineId}/changes/${activeChangeId}`)
       .then((r) => r.json())
       .then((res) => {
-        if (res.error) return;
-        setActiveDetail(res.data as DetailedChange);
+        if (res.error || !res.data) return;
+        const d = res.data as Record<string, unknown>;
+        if (typeof d.id === "string" && typeof d.file_path === "string") {
+          setActiveDetail(d as unknown as DetailedChange);
+        }
       })
       .catch(() => {})
       .finally(() => setIsDetailLoading(false));
@@ -105,7 +118,9 @@ export default function ReviewPage() {
     fetch(`/api/pipelines/${pipelineId}/changes/${activeChangeId}/comments`)
       .then((r) => r.json())
       .then((res) => {
-        if (!res.error) setComments((res.data ?? []) as LineCommentData[]);
+        if (!res.error && Array.isArray(res.data)) {
+          setComments(res.data as LineCommentData[]);
+        }
       })
       .catch(() => {});
   }, [activeChangeId, pipelineId]);

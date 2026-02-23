@@ -1,3 +1,6 @@
-export default function MonitorPage() {
-  return <div className="text-2xl font-bold tracking-tight">Pipeline Monitor</div>;
+import { redirect } from "next/navigation";
+
+export default async function MonitorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  redirect(`/pipelines/${id}`);
 }

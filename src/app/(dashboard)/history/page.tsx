@@ -99,7 +99,17 @@ export default function HistoryPage() {
           setError(json.error.message as string);
           return;
         }
-        setData(json.data as HistoryData);
+        const d = json.data;
+        if (
+          d &&
+          typeof d === "object" &&
+          Array.isArray((d as Record<string, unknown>).pipelines) &&
+          typeof (d as Record<string, unknown>).total === "number"
+        ) {
+          setData(d as HistoryData);
+        } else {
+          setError("응답 형식이 올바르지 않습니다.");
+        }
       } catch {
         setError("히스토리를 불러오지 못했습니다.");
       } finally {

@@ -58,7 +58,7 @@ interface PresetTemplate {
 // POST /api/pipelines/parse - Parse natural language into pipeline tasks via Claude API
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, user } = await getAuthenticatedUser();
+    const { supabase } = await getAuthenticatedUser();
 
     const body = await request.json();
     const input = body.input;
