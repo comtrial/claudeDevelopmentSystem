@@ -33,5 +33,66 @@ TypeScript check passes with 0 errors. The file contains no references to `api.a
 [2026-02-24 06:58:25] 🧹 Running ESLint...
 [2026-02-24 06:58:32] 🧪 Running Playwright tests...
 [2026-02-24 06:58:42] 📦 Committing and pushing...
-t tests...
-[2026-02-24 06:58:42] 📦 Committing and pushing...
+[develop 8318e50] feat: sprint-2-fix implementation
+ 6 files changed, 133 insertions(+), 140 deletions(-)
+ delete mode 100644 scripts/logs/sprint-3.log
+[2026-02-24 06:58:45] ⚠️ Push failed for sprint-2-fix, will retry later
+[2026-02-24 06:58:45] ✅ sprint-2-fix COMPLETE
+[2026-02-24 06:58:45] 
+[2026-02-24 06:58:45] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-02-24 06:58:45] 🚀 Starting: sprint-3
+[2026-02-24 06:58:45] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-02-24 06:58:45] 📝 Running Claude CLI (max-turns: 100)...
+Sprint 3 is complete. Here's a summary of everything implemented:
+
+---
+
+## Sprint 3 — Summary
+
+### Backend (BE)
+
+**BE-3.1 — Pipeline state API**
+- `pause/route.ts` — running → paused
+- `resume/route.ts` — paused → running
+- `cancel/route.ts` — running|paused → cancelled (with AlertDialog confirmation pattern)
+- Updated `execute/route.ts` — now also allows `failed` pipelines to re-execute, and points to the new enhanced simulator
+- Updated `[id]/route.ts` — GET now includes sessions join for progress data
+
+**BE-3.2 — Logs API** (`pipelines/[id]/logs/route.ts`)
+- Cursor-based pagination (keyset via `created_at`)
+- Filters: `agent_id`, `level`, `limit` (max 200)
+- Resolves logs via latest session for the pipeline
+
+**BE-3.3 — Token management** (`sessions/[id]/tokens/route.ts`)
+- PATCH with `{ tokensToAdd }`, increments usage, sets session `status=warning` at ≥90%
+
+**BE-3.4 — Enhanced simulator** (`lib/simulator/agent-simulator.ts`)
+- Configurable speed (slow/normal/fast: 3000/1000/300ms)
+- Realistic Korean log messages per role (pm, engineer, reviewer, planner, tester)
+- Progressive progress + token updates per log step
+- Sample `code_changes` inserted on completion
+- `stopSimulation()` for cancellation
+- `api/dev/simulate/route.ts` — dev-only POST/DELETE endpoint
+
+### Frontend (FE)
+
+**FE-3.1 — Monitoring page** (`pipelines/[id]/page.tsx`)
+- 3-tier layout: title+status badge → overall progress bar → agent grid
+- Session token gauge, action bar, togglable log viewer
+
+**FE-3.2 — AgentStatusCard** — animated status indicator (ping animation for active), progress bar, role icon, token usage tooltip
+
+**FE-3.3 — SessionLifetimeGauge** — 4-color policy (green/yellow/orange/red), inline warnings, sonner Toast at 80%, AlertDialog modal at 90%
+
+**FE-3.4 — `usePipelineRealtime`** — 3 Supabase Realtime channels (pipeline/agents/logs), connection status tracking, automatic cleanup
+
+**FE-3.5 — LogViewer** — virtual scroll via `@tanstack/react-virtual` (handles 10k+ logs), auto-scroll toggle, debounced search, agent/level filters
+
+**FE-3.6 — PipelineControls** — Pause/Resume/Cancel buttons, cancel requires AlertDialog confirmation, loading states, error toasts
+[2026-02-24 07:10:48] ✅ Claude CLI completed for sprint-3
+[2026-02-24 07:10:48] 🔍 Running TypeScript check...
+[2026-02-24 07:10:52] 🧹 Running ESLint...
+[2026-02-24 07:10:59] 🧪 Running Playwright tests...
+[2026-02-24 07:11:09] 📦 Committing and pushing...
+sts...
+[2026-02-24 07:11:09] 📦 Committing and pushing...

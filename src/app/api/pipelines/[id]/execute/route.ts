@@ -23,14 +23,15 @@ export async function POST(_request: NextRequest, { params }: Params) {
       throw Errors.notFound("Pipeline");
     }
 
-    // Only draft pipelines can be executed
+    // Allow re-execution of failed pipelines; block running pipelines
     if (pipeline.status === "running") {
       throw Errors.conflict("Pipeline is already running");
     }
 
-    if (pipeline.status !== "draft") {
+    const executableStatuses = ["draft", "failed"];
+    if (!executableStatuses.includes(pipeline.status)) {
       throw Errors.badRequest(
-        `Pipeline cannot be executed from '${pipeline.status}' status. Only 'draft' pipelines can be executed.`
+        `Pipeline cannot be executed from '${pipeline.status}' status. Only 'draft' or 'failed' pipelines can be executed.`
       );
     }
 
@@ -89,10 +90,9 @@ export async function POST(_request: NextRequest, { params }: Params) {
 
 async function triggerSimulator(pipelineId: string, sessionId: string): Promise<void> {
   try {
-    const { runSimulator } = await import("@/lib/pipeline/simulator");
+    const { runSimulator } = await import("@/lib/simulator/agent-simulator");
     await runSimulator(pipelineId, sessionId);
-  } catch {
-    // Simulator module may not exist yet (BE-2.4). Silently ignore import errors.
-    console.warn(`[execute] Simulator module not available yet for pipeline ${pipelineId}`);
+  } catch (err) {
+    console.warn(`[execute] Simulator failed for pipeline ${pipelineId}:`, err);
   }
 }

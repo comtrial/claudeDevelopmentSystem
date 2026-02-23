@@ -18,12 +18,13 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
   const { id } = await params;
 
-  // TODO: Add related data (tasks, agents) joins in subsequent sprint
+  // Fetch pipeline with tasks, agents, and latest session
   const { data, error: dbError } = await supabase
     .from("pipelines")
-    .select("*, tasks(*), agents(*)")
+    .select("*, tasks(*), agents(*), sessions(id, status, token_usage, token_limit, started_at, completed_at, metadata)")
     .eq("id", id)
     .eq("user_id", user.id)
+    .order("created_at", { foreignTable: "sessions", ascending: false })
     .single();
 
   if (dbError || !data) {

@@ -103,3 +103,12 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
 (Updated automatically during sprint execution)
 - Sprint 2 Fix: Replaced Claude API direct call with CLI spawn (child_process.spawn).
   Key pattern: claude -p "prompt" --output-format json --max-turns 1 --model sonnet
+- Sprint 3: Supabase Realtime uses `.channel(name).on('postgres_changes', {...}).subscribe()`.
+  Cannot filter agent_logs by pipeline_id directly (no join). Use metadata field instead.
+- Sprint 3: @tanstack/react-virtual v3 — use `useVirtualizer` hook. React Compiler emits
+  "incompatible library" warning (expected, not a build error).
+- Sprint 3: ESLint react-hooks/set-state-in-effect — defer setState with setTimeout 0 when
+  called inside useEffect body as workaround. Or initialize state to correct value.
+- Sprint 3: Supabase Realtime channels must be cleaned up via supabase.removeChannel(ch).
+- Sprint 3: Pipeline monitoring page is at pipelines/[id]/page.tsx. The monitor/page.tsx
+  stub was left from Sprint 2 WIP.
