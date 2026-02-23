@@ -155,5 +155,55 @@ Sprint 4 is complete. Here's a summary of everything implemented:
 [2026-02-24 07:19:54] 🧹 Running ESLint...
 [2026-02-24 07:20:02] 🧪 Running Playwright tests...
 [2026-02-24 07:20:11] 📦 Committing and pushing...
+[develop 71554b5] feat: sprint-4 implementation
+ 19 files changed, 2473 insertions(+), 3 deletions(-)
+ create mode 100644 scripts/logs/sprint-4.log
+ create mode 100644 src/app/api/pipelines/[id]/changes/[changeId]/comments/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/changes/[changeId]/review/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/changes/[changeId]/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/changes/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/review/approve-all/route.ts
+ create mode 100644 src/components/review/diff-viewer.tsx
+ create mode 100644 src/components/review/file-tree.tsx
+ create mode 100644 src/components/review/line-comment.tsx
+ create mode 100644 src/components/review/review-actions.tsx
+ create mode 100644 src/components/review/review-summary.tsx
+ create mode 100644 src/components/ui/accordion.tsx
+ create mode 100644 src/components/ui/radio-group.tsx
+ create mode 100644 src/lib/review/handle-review-result.ts
+[2026-02-24 07:20:14] ⚠️ Push failed for sprint-4, will retry later
+[2026-02-24 07:20:14] ✅ sprint-4 COMPLETE
+[2026-02-24 07:20:14] 
+[2026-02-24 07:20:14] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-02-24 07:20:14] 🚀 Starting: sprint-5
+[2026-02-24 07:20:14] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-02-24 07:20:14] 📝 Running Claude CLI (max-turns: 80)...
+Sprint 5 is complete. Here's a summary of everything implemented:
+
+## Sprint 5 Implementation Summary
+
+### Backend APIs (BE-5.1 & BE-5.2)
+- **`/api/pipelines/history`** — GET with status/search/sort/page filtering, queries `pipelines` table directly for completed/failed/cancelled pipelines, returns paginated result with `{ pipelines, total, page, totalPages }`
+- **`/api/pipelines/history/[id]`** — GET pipeline detail joined with agents, sessions, and code_changes
+- **`/api/pipelines/[id]/rerun`** — POST to clone a pipeline as a new draft (copies agents + tasks), returns `{ pipelineId }`
+- **`/api/settings`** — Updated to auto-create defaults if none exist (handles `PGRST116`), PATCH now deep-merges the `settings` JSONB
+- **`/api/settings/profile`** — GET/PATCH for display_name and avatar_url
+
+### Frontend Pages (FE-5.1, 5.2, 5.3)
+- **History List** (`/history`) — Search (300ms debounce), status filter, sort dropdown, pipeline cards with status badge + progress bar + meta info, pagination
+- **History Detail** (`/history/[id]`) — 3 tabs: Agent Activity, Code Changes, Token Usage (with horizontal Progress bars). Bottom buttons: "다시 실행" (rerun) + "대시보드로"
+- **Settings** (`/settings`) — 5 tabs: Profile (display name), Theme (color mode via next-themes + accent color), Token Policy (Slider budget + thresholds + auto-stop Switch), Notifications (4 switches), API Key (masked display + AlertDialog delete)
+
+### FE-5.4 Dashboard Loop
+Already implemented in a prior sprint — `RecentHistory` component was confirmed present in `dashboard-content.tsx`.
+
+### Quality
+- `npx tsc --noEmit` — no errors
+- `npx eslint --fix` — no issues
+[2026-02-24 07:30:13] ✅ Claude CLI completed for sprint-5
+[2026-02-24 07:30:13] 🔍 Running TypeScript check...
+[2026-02-24 07:30:17] 🧹 Running ESLint...
+[2026-02-24 07:30:25] 🧪 Running Playwright tests...
+[2026-02-24 07:30:33] 📦 Committing and pushing...
 sts...
-[2026-02-24 07:20:11] 📦 Committing and pushing...
+[2026-02-24 07:30:33] 📦 Committing and pushing...

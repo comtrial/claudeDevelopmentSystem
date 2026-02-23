@@ -122,3 +122,13 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
   code_changes are keyed on session_id (not pipeline_id directly).
 - Sprint 4: Review page uses flex-col + flex-1 + overflow-hidden for sticky header/footer
   with scrollable diff area. API routes for changes: nested under pipelines/[id]/changes/.
+- Sprint 5: History list/detail APIs at /api/pipelines/history/ (not /api/history/) query
+  the `pipelines` table directly filtering status IN ('completed','failed','cancelled').
+- Sprint 5: Settings API (GET) creates default settings if none exist; PATCH deep-merges
+  the `settings` JSONB field. Check for PGRST116 (no rows) not as an error.
+- Sprint 5: Rerun route copies pipeline + agents + tasks as new draft; appends "(재실행)"
+  to title. Redirect to /pipelines/new?pipeline={newId} for wizard pre-fill.
+- Sprint 5: Settings page uses next-themes `useTheme` for live color mode switching.
+  Slider uses onValueCommit (not onChange) for API persistence to avoid excessive calls.
+- Sprint 5: MVP Phase 0→1→2→3→4→5→6→0 cycle complete. Dashboard RecentHistory was already
+  implemented; FE-5.4 confirmed working. shadcn slider/table/pagination added in this sprint.
