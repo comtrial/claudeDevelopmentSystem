@@ -94,5 +94,66 @@ Sprint 3 is complete. Here's a summary of everything implemented:
 [2026-02-24 07:10:52] 🧹 Running ESLint...
 [2026-02-24 07:10:59] 🧪 Running Playwright tests...
 [2026-02-24 07:11:09] 📦 Committing and pushing...
+[develop 18672e9] feat: sprint-3 implementation
+ 22 files changed, 2239 insertions(+), 15 deletions(-)
+ create mode 100644 scripts/logs/sprint-3.log
+ create mode 100644 src/app/(dashboard)/pipelines/[id]/page.tsx
+ create mode 100644 src/app/api/dev/simulate/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/cancel/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/logs/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/pause/route.ts
+ create mode 100644 src/app/api/pipelines/[id]/resume/route.ts
+ create mode 100644 src/app/api/sessions/[id]/tokens/route.ts
+ create mode 100644 src/components/pipeline/agent-status-card.tsx
+ create mode 100644 src/components/pipeline/log-viewer.tsx
+ create mode 100644 src/components/pipeline/pipeline-controls.tsx
+ create mode 100644 src/components/pipeline/session-lifetime-gauge.tsx
+ create mode 100644 src/components/ui/toggle.tsx
+ create mode 100644 src/lib/realtime/use-pipeline-realtime.ts
+ create mode 100644 src/lib/simulator/agent-simulator.ts
+[2026-02-24 07:11:12] ⚠️ Push failed for sprint-3, will retry later
+[2026-02-24 07:11:12] ✅ sprint-3 COMPLETE
+[2026-02-24 07:11:12] 
+[2026-02-24 07:11:12] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-02-24 07:11:12] 🚀 Starting: sprint-4
+[2026-02-24 07:11:12] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-02-24 07:11:12] 📝 Running Claude CLI (max-turns: 80)...
+Sprint 4 is complete. Here's a summary of everything implemented:
+
+## Sprint 4 — Code Review Implementation
+
+### Backend (BE)
+
+**5 new API routes created:**
+
+| Route | Method | Purpose |
+|---|---|---|
+| `api/pipelines/[id]/changes` | GET | List all code changes for a pipeline (via latest session) |
+| `api/pipelines/[id]/changes/[changeId]` | GET | Single change with full diff/content |
+| `api/pipelines/[id]/changes/[changeId]/review` | PATCH | Approve / request-changes / reject with optional comment |
+| `api/pipelines/[id]/changes/[changeId]/comments` | GET/POST | Line-level comments (graceful fallback if table missing) |
+| `api/pipelines/[id]/review/approve-all` | POST | Bulk approve all pending changes |
+
+**Utility: `src/lib/review/handle-review-result.ts`**
+- After any review action, checks all changes: if all approved → pipeline `completed`, if any rejected → pipeline `failed`.
+
+### Frontend (FE)
+
+**5 new components in `src/components/review/`:**
+
+- **`file-tree.tsx`** — Sidebar file list with change-type icons (+/-/edit), review status badges, and active highlight
+- **`review-summary.tsx`** — Progress bar + counters (total/approved/pending/rejected/changes-requested) + total +/- lines
+- **`diff-viewer.tsx`** — Unified and split diff views using `parsePatch` from `diff` package, regex syntax highlighting for TS/JS/SQL, hover-to-comment per line
+- **`line-comment.tsx`** — Popover component for viewing/adding line-level comments
+- **`review-actions.tsx`** — Approve (green) / Request Changes (yellow, with comment input) / Reject (red, with AlertDialog confirmation)
+
+**Updated `src/app/(dashboard)/pipelines/[id]/review/page.tsx`:**
+- Full layout: header with unified/split toggle → sidebar (summary + file tree + bulk approve) + main (diff viewer + review actions + inline comment panel)
+- `tsc --noEmit` → 0 errors, `eslint --fix` → 0 errors/warnings
+[2026-02-24 07:19:50] ✅ Claude CLI completed for sprint-4
+[2026-02-24 07:19:50] 🔍 Running TypeScript check...
+[2026-02-24 07:19:54] 🧹 Running ESLint...
+[2026-02-24 07:20:02] 🧪 Running Playwright tests...
+[2026-02-24 07:20:11] 📦 Committing and pushing...
 sts...
-[2026-02-24 07:11:09] 📦 Committing and pushing...
+[2026-02-24 07:20:11] 📦 Committing and pushing...

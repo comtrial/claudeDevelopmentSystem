@@ -112,3 +112,13 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
 - Sprint 3: Supabase Realtime channels must be cleaned up via supabase.removeChannel(ch).
 - Sprint 3: Pipeline monitoring page is at pipelines/[id]/page.tsx. The monitor/page.tsx
   stub was left from Sprint 2 WIP.
+- Sprint 4: Use `parsePatch` from the `diff` npm package to parse unified diff format into
+  hunks. Import: `import { parsePatch } from 'diff'`. Install types: `@types/diff`.
+- Sprint 4: Skipped async shiki in favor of regex-based inline tokenization to avoid
+  hydration issues and async complexity in client components.
+- Sprint 4: `code_change_comments` table may not exist yet — handle with Postgres error
+  code `42P01` (undefined_table) and return empty array gracefully.
+- Sprint 4: `handleReviewResult` queries latest session by pipeline_id first, since
+  code_changes are keyed on session_id (not pipeline_id directly).
+- Sprint 4: Review page uses flex-col + flex-1 + overflow-hidden for sticky header/footer
+  with scrollable diff area. API routes for changes: nested under pipelines/[id]/changes/.
