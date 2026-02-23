@@ -118,24 +118,144 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/pipelines - Create a new pipeline
+const VALID_MODES = new Set(["auto_edit", "review", "plan_only"]);
+const VALID_AGENT_ROLES = new Set(["pm", "engineer", "reviewer"]);
+
+interface TaskInput {
+  title: string;
+  description?: string;
+  agent_role?: string;
+  order: number;
+}
+
+interface AgentInput {
+  role: string;
+  label?: string;
+  instruction?: string;
+  model?: string;
+}
+
+// POST /api/pipelines - Create a new pipeline with optional tasks and agents
 export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthenticatedUser();
 
     const body = await request.json();
 
-    const { data, error: dbError } = await supabase
+    // Validate required fields
+    if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
+      throw Errors.badRequest("title is required");
+    }
+
+    if (body.mode && !VALID_MODES.has(body.mode)) {
+      throw Errors.badRequest(`Invalid mode: ${body.mode}. Must be one of: auto_edit, review, plan_only`);
+    }
+
+    // Validate tasks array if provided
+    const tasksInput: TaskInput[] = body.tasks ?? [];
+    if (body.tasks && !Array.isArray(body.tasks)) {
+      throw Errors.badRequest("tasks must be an array");
+    }
+    for (const t of tasksInput) {
+      if (!t.title || typeof t.title !== "string") {
+        throw Errors.badRequest("Each task must have a title");
+      }
+    }
+
+    // Validate agents array if provided
+    const agentsInput: AgentInput[] = body.agents ?? [];
+    if (body.agents && !Array.isArray(body.agents)) {
+      throw Errors.badRequest("agents must be an array");
+    }
+    for (const a of agentsInput) {
+      if (!a.role || !VALID_AGENT_ROLES.has(a.role)) {
+        throw Errors.badRequest(`Invalid agent role: ${a.role}. Must be one of: pm, engineer, reviewer`);
+      }
+    }
+
+    // 1. Insert pipeline
+    const { data: pipeline, error: pipelineError } = await supabase
       .from("pipelines")
-      .insert({ ...body, user_id: user.id })
+      .insert({
+        title: body.title.trim(),
+        description: body.description ?? null,
+        mode: body.mode ?? "auto_edit",
+        config: body.config ?? {},
+        preset_template_id: body.preset_template_id ?? null,
+        user_id: user.id,
+      })
       .select("id, title, description, status, mode, config, preset_template_id, created_at, updated_at")
       .single();
 
-    if (dbError) {
-      throw Errors.internal(dbError.message);
+    if (pipelineError || !pipeline) {
+      throw Errors.internal(pipelineError?.message ?? "Failed to create pipeline");
     }
 
-    return NextResponse.json(successResponse(data), { status: 201 });
+    const pipelineId = pipeline.id;
+    let insertedTasks: unknown[] = [];
+    let insertedAgents: unknown[] = [];
+
+    try {
+      // 2. Bulk insert tasks
+      if (tasksInput.length > 0) {
+        const taskRows = tasksInput.map((t, i) => ({
+          pipeline_id: pipelineId,
+          title: t.title,
+          description: t.description ?? null,
+          order_index: t.order ?? i + 1,
+          type: "general" as const,
+          status: "pending" as const,
+        }));
+
+        const { data: tasks, error: tasksError } = await supabase
+          .from("tasks")
+          .insert(taskRows)
+          .select("id, title, description, type, status, order_index");
+
+        if (tasksError) {
+          throw new Error(tasksError.message);
+        }
+
+        insertedTasks = tasks ?? [];
+      }
+
+      // 3. Bulk insert agents
+      if (agentsInput.length > 0) {
+        const agentRows = agentsInput.map((a) => ({
+          pipeline_id: pipelineId,
+          role: a.role,
+          instruction: a.instruction ?? null,
+          model: a.model ?? "claude-sonnet-4-5-20250514",
+          config: a.label ? { label: a.label } : {},
+        }));
+
+        const { data: agents, error: agentsError } = await supabase
+          .from("agents")
+          .insert(agentRows)
+          .select("id, role, instruction, model, config");
+
+        if (agentsError) {
+          throw new Error(agentsError.message);
+        }
+
+        insertedAgents = agents ?? [];
+      }
+    } catch (bulkError) {
+      // Cleanup: delete the pipeline (cascades to tasks and agents via FK)
+      await supabase.from("pipelines").delete().eq("id", pipelineId);
+      throw Errors.internal(
+        `Failed to create pipeline resources: ${bulkError instanceof Error ? bulkError.message : "Unknown error"}`
+      );
+    }
+
+    return NextResponse.json(
+      successResponse({
+        ...pipeline,
+        tasks: insertedTasks,
+        agents: insertedAgents,
+      }),
+      { status: 201 }
+    );
   } catch (err) {
     const { body, status } = handleError(err);
     return NextResponse.json(body, { status });
