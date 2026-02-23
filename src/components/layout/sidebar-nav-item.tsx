@@ -27,16 +27,18 @@ export function SidebarNavItem({ item, collapsed, onClick }: SidebarNavItemProps
     <Link
       href={item.href}
       onClick={onClick}
+      aria-current={isActive ? "page" : undefined}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150",
-        "hover:bg-accent/50",
-        isActive
-          ? "bg-accent text-accent-foreground font-medium"
-          : "text-muted-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-accent/50 hover:text-accent-foreground",
+        isActive && "bg-accent text-accent-foreground font-medium",
+        !isActive && "text-muted-foreground",
+        item.isCta && !isActive && "text-primary font-medium hover:bg-primary/10",
         collapsed && "justify-center px-2"
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" />
+      <Icon className="size-5 shrink-0" strokeWidth={1.5} />
       {!collapsed && <span>{item.title}</span>}
     </Link>
   );

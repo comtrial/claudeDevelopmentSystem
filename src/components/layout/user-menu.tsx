@@ -24,8 +24,9 @@ export function UserMenu({ collapsed }: UserMenuProps) {
   const trigger = (
     <DropdownMenuTrigger asChild>
       <button
+        aria-label="사용자 메뉴"
         className={cn(
-          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 hover:bg-accent/50",
+          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           collapsed && "justify-center px-2"
         )}
       >

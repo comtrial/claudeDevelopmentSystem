@@ -1,3 +1,5 @@
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
+
 export default function DashboardPage() {
-  return <div className="text-2xl font-bold tracking-tight">Dashboard</div>;
+  return <DashboardContent />;
 }

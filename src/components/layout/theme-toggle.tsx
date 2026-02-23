@@ -11,12 +11,12 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="h-8 w-8"
+      className="size-8 min-h-[44px] min-w-[44px]"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      aria-label="테마 전환"
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
+      <Sun className="size-4 rotate-0 scale-100 transition-all motion-reduce:transition-none dark:-rotate-90 dark:scale-0" strokeWidth={1.5} />
+      <Moon className="absolute size-4 rotate-90 scale-0 transition-all motion-reduce:transition-none dark:rotate-0 dark:scale-100" strokeWidth={1.5} />
     </Button>
   );
 }

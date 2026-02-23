@@ -11,21 +11,22 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   exact?: boolean;
+  isCta?: boolean;
 }
 
 export const mainNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
-  { title: "New Pipeline", href: "/pipelines/new", icon: Plus },
-  { title: "History", href: "/history", icon: History },
+  { title: "대시보드", href: "/dashboard", icon: LayoutDashboard, exact: true },
+  { title: "새 파이프라인", href: "/pipelines/new", icon: Plus, isCta: true },
+  { title: "히스토리", href: "/history", icon: History },
 ];
 
 export const bottomNavItems: NavItem[] = [
-  { title: "Settings", href: "/settings", icon: Settings },
+  { title: "설정", href: "/settings", icon: Settings },
 ];
 
 export const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/pipelines/new": "New Pipeline",
-  "/history": "History",
-  "/settings": "Settings",
+  "/dashboard": "대시보드",
+  "/pipelines/new": "새 파이프라인",
+  "/history": "히스토리",
+  "/settings": "설정",
 };

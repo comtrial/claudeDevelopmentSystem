@@ -27,8 +27,8 @@ export function WebSocketProvider({
   children,
   enabled = true,
 }: WebSocketProviderProps) {
-  const updatePipelineStatus = usePipelineStore(
-    (s) => s.updatePipelineStatus
+  const updatePipeline = usePipelineStore(
+    (s) => s.updatePipeline
   );
 
   const handleMessage = useCallback(
@@ -39,13 +39,13 @@ export function WebSocketProvider({
             pipeline_id: string;
             status: PipelineStatus;
           };
-          updatePipelineStatus(pipeline_id, status);
+          updatePipeline(pipeline_id, { status });
           break;
         }
         // Additional event types can be added here
       }
     },
-    [updatePipelineStatus]
+    [updatePipeline]
   );
 
   const { status, send, reconnect } = useWebSocket({

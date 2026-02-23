@@ -10,13 +10,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     useSidebar();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <Sidebar collapsed={collapsed} onToggle={toggle} />
       <MobileNav open={mobileOpen} onClose={closeMobile} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar onMenuClick={openMobile} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
       </div>
     </div>
   );

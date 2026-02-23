@@ -1,6 +1,6 @@
 "use client";
 
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,33 +17,51 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden h-screen flex-shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 ease-in-out md:flex",
+        "hidden h-screen flex-shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 ease-in-out motion-reduce:transition-none md:flex",
         collapsed ? "w-16" : "w-60"
       )}
     >
-      {/* Logo / Brand */}
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
+      <div
+        className="flex items-center gap-2 border-b border-border px-4"
+        style={{ height: "var(--topbar-height)" }}
+      >
         {!collapsed && (
-          <span className="text-lg font-semibold tracking-tight">
-            AgentOS
-          </span>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <Music className="size-5 shrink-0 text-primary" strokeWidth={1.5} />
+            <span className="truncate text-sm font-semibold tracking-tight">
+              Sequeliquance
+            </span>
+          </div>
+        )}
+        {collapsed && (
+          <Music className="mx-auto size-5 shrink-0 text-primary" strokeWidth={1.5} />
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className={cn("h-8 w-8 shrink-0", collapsed ? "mx-auto" : "ml-auto")}
+          aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+          className={cn("size-8 shrink-0", collapsed ? "hidden" : "ml-auto")}
         >
-          {collapsed ? (
-            <PanelLeft className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
+          <PanelLeftClose className="size-4" strokeWidth={1.5} />
         </Button>
       </div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+      {collapsed && (
+        <div className="flex justify-center py-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            aria-label="사이드바 펼치기"
+            className="size-8"
+          >
+            <PanelLeft className="size-4" strokeWidth={1.5} />
+          </Button>
+        </div>
+      )}
+
+      <nav aria-label="주 네비게이션" className="flex-1 space-y-1 p-2">
         {mainNavItems.map((item) => (
           <SidebarNavItem key={item.href} item={item} collapsed={collapsed} />
         ))}
@@ -51,13 +69,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       <Separator />
 
-      {/* Bottom: Settings + User */}
-      <div className="space-y-1 p-2">
+      <nav aria-label="보조 네비게이션" className="space-y-1 p-2">
         {bottomNavItems.map((item) => (
           <SidebarNavItem key={item.href} item={item} collapsed={collapsed} />
         ))}
         <UserMenu collapsed={collapsed} />
-      </div>
+      </nav>
     </aside>
   );
 }
