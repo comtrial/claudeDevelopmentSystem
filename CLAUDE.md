@@ -101,3 +101,5 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
 
 ## Learnings
 (Updated automatically during sprint execution)
+- Sprint 2 Fix: Replaced Claude API direct call with CLI spawn (child_process.spawn).
+  Key pattern: claude -p "prompt" --output-format json --max-turns 1 --model sonnet

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { spawn } from "child_process";
 import { getAuthenticatedUser } from "@/lib/api/auth";
 import { successResponse, handleError } from "@/lib/api/response";
 import { Errors, AppError } from "@/lib/api/errors";
 
 const MAX_INPUT_LENGTH = 2000;
-const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-const CLAUDE_MODEL = "claude-sonnet-4-5-20250514";
-const CLAUDE_TIMEOUT_MS = 30_000;
 
 const SYSTEM_PROMPT = `You are a development task decomposition assistant. Your job is to analyze a natural language description of a development task and break it down into ordered sub-tasks.
 
@@ -73,11 +71,8 @@ export async function POST(request: NextRequest) {
       throw Errors.badRequest(`input must not exceed ${MAX_INPUT_LENGTH} characters`);
     }
 
-    // Get Claude API key: user_settings first, then env fallback
-    const apiKey = await getApiKey(supabase, user.id);
-
-    // Call Claude API with retry on JSON parse failure
-    const parsed = await callClaudeWithRetry(apiKey, input.trim());
+    // Call Claude CLI with retry on JSON parse failure
+    const parsed = await callClaudeWithRetry(input.trim());
 
     // Generate UUIDs and validate tasks
     const tasks: ParsedTask[] = parsed.tasks.map((t, i) => ({
@@ -103,41 +98,58 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function getApiKey(
-  supabase: Awaited<ReturnType<typeof getAuthenticatedUser>>["supabase"],
-  userId: string
-): Promise<string> {
-  const { data: settings } = await supabase
-    .from("user_settings")
-    .select("api_keys")
-    .eq("user_id", userId)
-    .single();
+function callClaudeCLI(input: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const prompt = `${SYSTEM_PROMPT}\n\nUser input:\n${input}`;
+    const child = spawn("claude", [
+      "-p", prompt,
+      "--output-format", "json",
+      "--max-turns", "1",
+      "--model", "sonnet",
+    ]);
 
-  const userKey =
-    settings?.api_keys &&
-    typeof settings.api_keys === "object" &&
-    "claude_api_key" in (settings.api_keys as Record<string, unknown>)
-      ? (settings.api_keys as Record<string, string>).claude_api_key
-      : null;
+    let stdout = "";
+    let stderr = "";
 
-  const apiKey = userKey || process.env.CLAUDE_API_KEY;
+    child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
 
-  if (!apiKey) {
-    throw Errors.badRequest(
-      "Claude API key not configured. Set it in user settings or contact the administrator."
-    );
-  }
+    const timeout = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new AppError(502, "Claude CLI request timed out", "CLI_TIMEOUT"));
+    }, 30000);
 
-  return apiKey;
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      if (code !== 0) {
+        reject(new AppError(502, `Claude CLI exited with code ${code}: ${stderr}`, "CLI_ERROR"));
+        return;
+      }
+      // Parse the JSON output from claude CLI
+      try {
+        const cliOutput = JSON.parse(stdout);
+        // claude --output-format json returns { result: "text content", ... }
+        const text = cliOutput.result || cliOutput.text || stdout;
+        resolve(typeof text === "string" ? text : JSON.stringify(text));
+      } catch {
+        // If not JSON wrapper, use raw stdout
+        resolve(stdout);
+      }
+    });
+
+    child.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(new AppError(502, `Claude CLI not found or failed: ${err.message}`, "CLI_ERROR"));
+    });
+  });
 }
 
 async function callClaudeWithRetry(
-  apiKey: string,
   input: string,
   retries = 1
 ): Promise<ClaudeParseResult> {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const raw = await callClaudeAPI(apiKey, input);
+    const raw = await callClaudeCLI(input);
     const parsed = tryParseJSON(raw);
     if (parsed) return parsed;
 
@@ -147,64 +159,7 @@ async function callClaudeWithRetry(
     }
   }
 
-  throw Errors.unprocessable("Failed to parse Claude API response as valid JSON");
-}
-
-async function callClaudeAPI(apiKey: string, input: string): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), CLAUDE_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(CLAUDE_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: input }],
-      }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "Unknown error");
-
-      if (response.status === 401) {
-        throw Errors.badRequest("Invalid Claude API key");
-      }
-      if (response.status === 429) {
-        throw new AppError(502, "Claude API rate limit exceeded. Please try again later.", "UPSTREAM_ERROR");
-      }
-
-      throw new AppError(502, `Claude API error (${response.status}): ${errorBody}`, "UPSTREAM_ERROR");
-    }
-
-    const data = await response.json();
-    const textBlock = data.content?.find(
-      (block: { type: string; text?: string }) => block.type === "text"
-    );
-
-    if (!textBlock?.text) {
-      throw Errors.unprocessable("Claude API returned an empty response");
-    }
-
-    return textBlock.text;
-  } catch (err) {
-    if (err instanceof AppError) throw err;
-
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new AppError(502, "Claude API request timed out", "UPSTREAM_TIMEOUT");
-    }
-
-    throw new AppError(502, "Failed to connect to Claude API", "UPSTREAM_ERROR");
-  } finally {
-    clearTimeout(timeout);
-  }
+  throw Errors.unprocessable("Failed to parse Claude CLI response as valid JSON");
 }
 
 function tryParseJSON(text: string): ClaudeParseResult | null {

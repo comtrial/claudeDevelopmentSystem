@@ -23,6 +23,10 @@ CLAUDE_FLAGS="--dangerously-skip-permissions"
 cd "$PROJECT_DIR"
 mkdir -p "$LOG_DIR"
 
+# CRITICAL: Unset CLAUDECODE to allow nested Claude CLI invocation
+unset CLAUDECODE 2>/dev/null || true
+unset CLAUDE_CODE 2>/dev/null || true
+
 # Node.js setup
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
