@@ -67,18 +67,13 @@ test.describe("Phase 3: Task Output Preview + Duration + Result Summary", () => 
     expect(createRes.data).toBeTruthy();
     testPipelineId = createRes.data.id;
 
-    // Update first task to completed with output_data
-    await page.evaluate(async (pipelineId: string) => {
-      // Fetch tasks to get IDs
-      const detailRes = await fetch(`/api/pipelines/${pipelineId}`);
-      const detail = await detailRes.json();
-      const tasks = detail.data.tasks;
-
-      if (tasks.length > 0) {
-        // We can't update tasks directly via API, but we can verify the structure
-        // The task output preview feature works with any output_data in the DB
-      }
-    }, testPipelineId);
+    // Verify task structure via detail API
+    const detailCheck = await page.evaluate(async (id: string) => {
+      const res = await fetch(`/api/pipelines/${id}`);
+      const json = await res.json();
+      return json.data?.tasks?.length ?? 0;
+    }, testPipelineId!);
+    expect(detailCheck).toBe(2);
 
     // Navigate to monitor page
     await page.goto(`/pipelines/${testPipelineId}`);

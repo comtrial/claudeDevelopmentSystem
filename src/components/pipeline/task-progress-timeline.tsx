@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -95,6 +95,42 @@ function formatDuration(startStr: string, endStr: string): string {
   const hours = Math.floor(mins / 60);
   const remainMins = mins % 60;
   return `${hours}시간 ${remainMins}분`;
+}
+
+function formatElapsedFromMs(diffMs: number): string {
+  if (diffMs < 0 || isNaN(diffMs)) return "0초";
+  const secs = Math.floor(diffMs / 1000);
+  if (secs < 60) return `${secs}초째`;
+  const mins = Math.floor(secs / 60);
+  const remainSecs = secs % 60;
+  if (mins < 60) return `${mins}분 ${remainSecs}초째`;
+  const hours = Math.floor(mins / 60);
+  const remainMins = mins % 60;
+  return `${hours}시간 ${remainMins}분째`;
+}
+
+function ElapsedTimer({ startedAt }: { startedAt: string }) {
+  const calcElapsed = useCallback(
+    () => formatElapsedFromMs(Date.now() - new Date(startedAt).getTime()),
+    [startedAt]
+  );
+  const [elapsed, setElapsed] = useState(calcElapsed);
+
+  useEffect(() => {
+    setElapsed(calcElapsed());
+    const id = setInterval(() => setElapsed(calcElapsed()), 1000);
+    return () => clearInterval(id);
+  }, [calcElapsed]);
+
+  return (
+    <span
+      className="flex items-center gap-0.5 text-[10px] text-running tabular-nums"
+      data-testid="task-elapsed-timer"
+    >
+      <Clock className="h-2.5 w-2.5" />
+      {elapsed}
+    </span>
+  );
 }
 
 function getOutputSummary(outputData: Record<string, unknown>): string | null {
@@ -227,7 +263,12 @@ function TaskNode({
             {config.label}
           </span>
 
-          {/* Duration */}
+          {/* Elapsed timer for in_progress tasks */}
+          {task.status === "in_progress" && (
+            <ElapsedTimer startedAt={task.updated_at} />
+          )}
+
+          {/* Duration for completed/failed tasks */}
           {duration && (
             <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
               <Clock className="h-2.5 w-2.5" />

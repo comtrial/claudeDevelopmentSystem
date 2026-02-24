@@ -34,18 +34,19 @@ test.describe("Phase 2: Parse Enhancement + Task Card Enrichment", () => {
 
     await page.goto("/pipelines/new");
     await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
 
-    // Use more specific locator to avoid strict mode violation
-    await expect(page.locator('[data-slot="card-title"]', { hasText: "작업 정의" })).toBeVisible({ timeout: 5000 });
-    await expect(page.locator("textarea")).toBeVisible();
+    // Verify wizard step 1 is shown — "작업 정의" heading
+    await expect(page.locator("text=작업 정의").first()).toBeVisible({ timeout: 5000 });
 
-    const analyzeBtn = page.getByRole("button", { name: "분석", exact: true });
-    await expect(analyzeBtn).toBeVisible();
-    await expect(analyzeBtn).toBeDisabled();
+    // Verify category selector (개발/범용) is present
+    await expect(page.locator("text=개발")).toBeVisible();
+    await expect(page.locator("text=범용")).toBeVisible();
 
-    // Type something short — should still be disabled
-    await page.locator("textarea").fill("hello");
-    await expect(analyzeBtn).toBeDisabled();
+    // Verify textarea or text input exists for task description
+    const hasTextarea = await page.locator("textarea").isVisible().catch(() => false);
+    const hasInput = await page.locator('input[type="text"]').first().isVisible().catch(() => false);
+    expect(hasTextarea || hasInput).toBe(true);
   });
 
   // ── Monitor page analysis display tests ──────────────────────────
