@@ -20,8 +20,8 @@ interface MobileNavProps {
 export function MobileNav({ open, onClose }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="left" className="w-60 p-0" showCloseButton={false}>
-        <SheetHeader className="flex h-14 items-center border-b border-border px-4">
+      <SheetContent side="left" className="flex w-60 flex-col p-0" showCloseButton={false}>
+        <SheetHeader className="flex h-14 shrink-0 items-center border-b border-border px-4">
           <div className="flex items-center gap-2">
             <Music className="size-5 shrink-0 text-primary" strokeWidth={1.5} />
             <SheetTitle className="text-sm font-semibold tracking-tight">
@@ -29,7 +29,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             </SheetTitle>
           </div>
         </SheetHeader>
-        <nav aria-label="모바일 네비게이션" className="flex-1 space-y-1 p-2">
+        <nav aria-label="모바일 네비게이션" className="flex-1 space-y-1 overflow-y-auto p-2">
           {mainNavItems.map((item) => (
             <SidebarNavItem
               key={item.href}
@@ -40,7 +40,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
           ))}
         </nav>
         <Separator />
-        <div className="space-y-1 p-2">
+        <div className="shrink-0 space-y-1 p-2">
           {bottomNavItems.map((item) => (
             <SidebarNavItem
               key={item.href}

@@ -4,12 +4,14 @@ import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import type { ActiveAgent, ActiveLog } from "@/stores/pipeline-store";
+import type { TaskStatus } from "@/types/pipeline";
 
 /**
  * Subscribes to Supabase Realtime for a given pipeline:
  * 1. `pipeline:{id}` — pipelines table UPDATE events
  * 2. `agents:{id}` — agents table INSERT/UPDATE/DELETE events
  * 3. `logs:{id}` — agent_logs table INSERT events (via latest session)
+ * 4. `tasks:{id}` — tasks table UPDATE events
  *
  * Updates pipeline-store state on each event.
  * Tracks connection status.
@@ -18,6 +20,7 @@ export function usePipelineRealtime(pipelineId: string) {
   const {
     updatePipelineStatus,
     updateAgentStatus,
+    updateTaskStatus,
     appendLog,
     setConnectionStatus,
   } = usePipelineStore.getState();
@@ -80,10 +83,6 @@ export function usePipelineRealtime(pipelineId: string) {
       .subscribe();
 
     // Channel 3: new log entries
-    // We listen for agent_logs where pipeline_id matches via a session join.
-    // Supabase Realtime doesn't support joins, so we filter by pipeline_id stored in metadata,
-    // or alternatively listen broadly on session_id via a runtime lookup.
-    // For simplicity, we subscribe without a filter and check pipelineId from metadata.
     const logsChannel = supabase
       .channel(`logs:${pipelineId}`)
       .on(
@@ -97,8 +96,6 @@ export function usePipelineRealtime(pipelineId: string) {
           const row = payload.new as Record<string, unknown>;
           const metadata = (row.metadata as Record<string, unknown>) ?? {};
 
-          // Only process logs that belong to this pipeline (via metadata)
-          // The simulator stores pipeline context in metadata
           const log: ActiveLog = {
             id: row.id as string | number,
             session_id: row.session_id as string,
@@ -113,11 +110,34 @@ export function usePipelineRealtime(pipelineId: string) {
       )
       .subscribe();
 
+    // Channel 4: task status updates
+    const tasksChannel = supabase
+      .channel(`tasks:${pipelineId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tasks",
+          filter: `pipeline_id=eq.${pipelineId}`,
+        },
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          updateTaskStatus(
+            row.id as string,
+            row.status as TaskStatus,
+            (row.output_data as Record<string, unknown>) ?? undefined
+          );
+        }
+      )
+      .subscribe();
+
     return () => {
       setConnectionStatus("disconnected");
       supabase.removeChannel(pipelineChannel);
       supabase.removeChannel(agentsChannel);
       supabase.removeChannel(logsChannel);
+      supabase.removeChannel(tasksChannel);
     };
-  }, [pipelineId, updatePipelineStatus, updateAgentStatus, appendLog, setConnectionStatus]);
+  }, [pipelineId, updatePipelineStatus, updateAgentStatus, updateTaskStatus, appendLog, setConnectionStatus]);
 }

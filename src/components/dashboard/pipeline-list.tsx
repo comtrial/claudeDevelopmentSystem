@@ -29,12 +29,13 @@ export function PipelineList({ pipelines }: PipelineListProps) {
 
   return (
     <section aria-label="활성 파이프라인 목록">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">
+      <div className="mb-4 flex items-center justify-between sm:mb-6">
+        <h2 className="text-base font-semibold sm:text-lg">
           활성 파이프라인 {pipelines.length}개
         </h2>
         <Button
           size="sm"
+          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
           onClick={() => router.push("/pipelines/new")}
         >
           <Plus className="size-4" strokeWidth={1.5} />

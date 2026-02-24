@@ -213,11 +213,11 @@ export default function HistoryDetailPage() {
           </div>
         </div>
 
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+        <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+          <Button variant="outline" className="min-h-[44px] flex-1 sm:flex-none" onClick={() => router.push("/dashboard")}>
             대시보드로
           </Button>
-          <Button onClick={() => void handleRerun()} disabled={isRerunning}>
+          <Button className="min-h-[44px] flex-1 sm:flex-none" onClick={() => void handleRerun()} disabled={isRerunning}>
             {isRerunning ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (
@@ -245,10 +245,10 @@ export default function HistoryDetailPage() {
 
       {/* 탭 */}
       <Tabs defaultValue="agents">
-        <TabsList>
-          <TabsTrigger value="agents">에이전트 활동</TabsTrigger>
-          <TabsTrigger value="changes">코드 변경</TabsTrigger>
-          <TabsTrigger value="tokens">토큰 사용량</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="agents" className="text-xs sm:text-sm">에이전트</TabsTrigger>
+          <TabsTrigger value="changes" className="text-xs sm:text-sm">코드 변경</TabsTrigger>
+          <TabsTrigger value="tokens" className="text-xs sm:text-sm">토큰</TabsTrigger>
         </TabsList>
 
         {/* 에이전트 활동 탭 */}
@@ -291,15 +291,15 @@ export default function HistoryDetailPage() {
               {pipeline.code_changes.map((change, i) => (
                 <div key={change.id}>
                   {i > 0 && <Separator />}
-                  <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center justify-between gap-2 px-4 py-3">
                     <div className="flex items-center gap-2 min-w-0">
                       <FileCode2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="font-mono text-sm truncate">{change.file_path}</span>
+                      <span className="font-mono text-xs sm:text-sm truncate">{change.file_path}</span>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0 ml-4 text-xs">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-xs">
                       <span className="text-healthy">+{change.additions}</span>
                       <span className="text-critical">-{change.deletions}</span>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                         {CHANGE_TYPE_LABELS[change.change_type] ?? change.change_type}
                       </Badge>
                     </div>

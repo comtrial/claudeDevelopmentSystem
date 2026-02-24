@@ -26,7 +26,7 @@ export function WizardActions({
     <div className="flex items-center justify-between border-t pt-4">
       <div>
         {!isFirstStep && (
-          <Button variant="ghost" onClick={onPrev} disabled={isSubmitting}>
+          <Button variant="ghost" className="min-h-[44px]" onClick={onPrev} disabled={isSubmitting}>
             <ArrowLeft />
             이전
           </Button>
@@ -34,7 +34,7 @@ export function WizardActions({
       </div>
       <div>
         {isLastStep ? (
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button className="min-h-[44px]" onClick={onSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -48,7 +48,7 @@ export function WizardActions({
             )}
           </Button>
         ) : (
-          <Button onClick={onNext}>
+          <Button className="min-h-[44px]" onClick={onNext}>
             다음
             <ArrowRight />
           </Button>

@@ -1,16 +1,29 @@
+export type TaskComplexity = "low" | "medium" | "high";
+
 export interface ParsedTask {
   id: string;
   title: string;
   description: string;
   agent_role: "pm" | "engineer" | "reviewer";
   order: number;
+  estimated_complexity?: TaskComplexity;
+  acceptance_criteria?: string;
+}
+
+export interface ParseAnalysis {
+  intent: string;
+  scope: "small" | "medium" | "large";
+  reasoning: string;
 }
 
 export interface AgentConfig {
   role: "pm" | "engineer" | "reviewer";
   label: string;
   instruction: string;
-  model: "claude-sonnet-4-5-20250514" | "claude-opus-4-0-20250514";
+  model: "claude-opus-4-6" | "claude-sonnet-4-5-20250514";
+  allowedTools: string[];
+  chainOrder: number;   // pm=1, engineer=2, reviewer=3
+  maxTurns: number;     // default 25
 }
 
 export interface Recommendation {
@@ -24,13 +37,18 @@ export type WizardStep = 1 | 2 | 3;
 
 export type PipelineModeType = "auto-edit" | "review" | "plan-only";
 
+export type PipelineCategoryType = "development" | "general";
+
 export interface WizardState {
   currentStep: WizardStep;
   tasks: ParsedTask[];
   agents: AgentConfig[];
   mode: PipelineModeType;
+  category: PipelineCategoryType;
   recommendation: Recommendation | null;
+  analysis: ParseAnalysis | null;
   isSubmitting: boolean;
+  originalQuery: string;
 }
 
 export const WIZARD_STEPS = [

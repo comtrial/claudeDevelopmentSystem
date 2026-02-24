@@ -21,8 +21,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, CheckCircle2, Columns2, AlignLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Columns2, AlignLeft, Loader2, PanelLeftClose, PanelLeft } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 import { FileTree, type FileChange } from "@/components/review/file-tree";
 import { ReviewSummary } from "@/components/review/review-summary";
@@ -50,6 +51,7 @@ export default function ReviewPage() {
   const [commentLineNo, setCommentLineNo] = useState<number | null>(null);
 
   const [diffMode, setDiffMode] = useState<DiffMode>("unified");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isApproveAllLoading, setIsApproveAllLoading] = useState(false);
@@ -172,10 +174,10 @@ export default function ReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-8 w-64" />
         <div className="flex gap-4">
-          <Skeleton className="h-96 w-56 shrink-0" />
+          <Skeleton className="hidden md:block h-96 w-56 shrink-0" />
           <Skeleton className="h-96 flex-1" />
         </div>
       </div>
@@ -199,15 +201,24 @@ export default function ReviewPage() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* 헤더 */}
-      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b shrink-0 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" asChild>
+      <div className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 border-b shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Button variant="ghost" size="icon" className="shrink-0" asChild>
             <Link href={`/pipelines/${pipelineId}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
+          {/* Mobile sidebar toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 md:hidden"
+            onClick={() => setSidebarOpen((v) => !v)}
+          >
+            {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+          </Button>
           <div className="min-w-0">
-            <h1 className="font-semibold truncate">코드 리뷰 — {pipelineTitle}</h1>
+            <h1 className="font-semibold truncate text-sm sm:text-base">코드 리뷰 — {pipelineTitle}</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               {changes.length}개 파일 변경됨
               {pendingCount > 0 && (
@@ -224,20 +235,31 @@ export default function ReviewPage() {
           <TabsList className="h-8">
             <TabsTrigger value="unified" className="h-6 px-2 text-xs gap-1">
               <AlignLeft className="h-3 w-3" />
-              통합
+              <span className="hidden sm:inline">통합</span>
             </TabsTrigger>
-            <TabsTrigger value="split" className="h-6 px-2 text-xs gap-1">
+            <TabsTrigger value="split" className="hidden sm:inline-flex h-6 px-2 text-xs gap-1">
               <Columns2 className="h-3 w-3" />
-              분할
+              <span className="hidden sm:inline">분할</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* 메인 레이아웃 */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden relative">
+        {/* Mobile overlay backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         {/* 사이드바: 파일 목록 + 리뷰 요약 */}
-        <aside className="w-56 lg:w-64 shrink-0 border-r flex flex-col min-h-0">
+        <aside className={cn(
+          "shrink-0 border-r flex flex-col min-h-0 bg-background",
+          "fixed top-0 bottom-0 left-0 z-30 w-[min(72vw,288px)] transition-transform duration-200 md:static md:z-auto md:w-56 lg:w-64 md:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
           {/* 리뷰 요약 */}
           <div className="p-3 border-b">
             <ReviewSummary changes={changes} />
@@ -251,7 +273,10 @@ export default function ReviewPage() {
               <FileTree
                 changes={changes}
                 activeChangeId={activeChangeId}
-                onSelect={setActiveChangeId}
+                onSelect={(id) => {
+                  setActiveChangeId(id);
+                  setSidebarOpen(false);
+                }}
               />
             )}
           </ScrollArea>
@@ -309,10 +334,10 @@ export default function ReviewPage() {
           ) : activeDetail ? (
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* 파일 헤더 */}
-              <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b bg-muted/30 shrink-0 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 border-b bg-muted/30 shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="font-mono text-sm truncate text-foreground"
+                    className="font-mono text-xs sm:text-sm truncate text-foreground"
                     title={activeDetail.file_path}
                   >
                     {activeDetail.file_path}
@@ -344,7 +369,7 @@ export default function ReviewPage() {
               {commentLineNo !== null && (
                 <>
                   <Separator />
-                  <div className="p-4 bg-muted/20 shrink-0">
+                  <div className="p-3 sm:p-4 bg-muted/20 shrink-0">
                     <InlineCommentPanel
                       changeId={activeDetail.id}
                       pipelineId={pipelineId}

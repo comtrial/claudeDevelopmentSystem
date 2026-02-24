@@ -29,7 +29,7 @@ export function SidebarNavItem({ item, collapsed, onClick }: SidebarNavItemProps
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150",
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 min-h-[44px]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "hover:bg-accent/50 hover:text-accent-foreground",
         isActive && "bg-accent text-accent-foreground font-medium",

@@ -5,6 +5,14 @@ export interface AgentSummary {
   roles: string[];
 }
 
+export interface TaskSummary {
+  total: number;
+  completed: number;
+  in_progress: number;
+  failed: number;
+  pending: number;
+}
+
 export interface LatestSession {
   id: string;
   status: string;
@@ -22,5 +30,6 @@ export interface PipelineSummary {
   created_at: string;
   updated_at: string;
   agent_summary: AgentSummary;
+  task_summary: TaskSummary;
   latest_session: LatestSession | null;
 }

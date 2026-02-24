@@ -15,6 +15,7 @@ export interface Pipeline {
   user_id: string;
   title: string;
   description: string | null;
+  original_query: string | null;
   status: PipelineStatus;
   mode: PipelineMode;
   config: Record<string, unknown>;

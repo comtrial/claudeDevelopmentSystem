@@ -20,9 +20,9 @@ import { useWizardStore } from "@/stores/wizard-store";
 import type { ApiResponse } from "@/types/api";
 
 const DEFAULT_AGENTS = [
-  { role: "pm", label: "PM", instruction: "", model: "claude-sonnet-4-5-20250514" },
-  { role: "engineer", label: "Engineer", instruction: "", model: "claude-sonnet-4-5-20250514" },
-  { role: "reviewer", label: "Reviewer", instruction: "", model: "claude-sonnet-4-5-20250514" },
+  { role: "pm", label: "PM", instruction: "", model: "claude-opus-4-6" },
+  { role: "engineer", label: "Engineer", instruction: "", model: "claude-opus-4-6" },
+  { role: "reviewer", label: "Reviewer", instruction: "", model: "claude-opus-4-6" },
 ];
 
 export function RecommendationBanner() {
@@ -86,9 +86,9 @@ export function RecommendationBanner() {
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-agent-pm/30 bg-agent-pm/5 px-4 py-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-agent-pm/30 bg-agent-pm/5 px-3 py-3 sm:px-4">
       <Sparkles className="size-4 shrink-0 text-agent-pm" />
-      <p className="flex-1 text-sm">
+      <p className="min-w-0 flex-1 text-sm">
         추천 프리셋:{" "}
         <span className="font-medium">{recommendation.preset_name}</span>
         <span className="ml-1 text-muted-foreground">

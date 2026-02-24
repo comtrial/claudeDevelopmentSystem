@@ -67,7 +67,7 @@ export function SessionLifetimeGauge({
   return (
     <>
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm gap-2 flex-wrap">
           <span className="text-muted-foreground">세션 토큰</span>
           <span className={cn("font-medium tabular-nums", colorClass)}>
             {percentage}% — {tokenUsed.toLocaleString()} / {tokenLimit.toLocaleString()} tokens

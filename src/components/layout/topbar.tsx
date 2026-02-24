@@ -42,7 +42,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
       <Separator orientation="vertical" className="h-6 md:hidden" />
 
-      <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+      <h1 className="truncate text-lg font-semibold tracking-tight">{title}</h1>
 
       <div className="flex-1" />
 

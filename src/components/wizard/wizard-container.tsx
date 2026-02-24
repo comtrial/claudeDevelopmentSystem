@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useWizardStore, selectHasUnsavedChanges } from "@/stores/wizard-store";
@@ -47,6 +47,7 @@ export function WizardContainer() {
   const setStep = useWizardStore((s) => s.setStep);
   const setSubmitting = useWizardStore((s) => s.setSubmitting);
   const reset = useWizardStore((s) => s.reset);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // beforeunload warning
   useEffect(() => {
@@ -85,8 +86,13 @@ export function WizardContainer() {
   );
 
   const handleSubmit = useCallback(async () => {
-    const { tasks, agents, mode } = useWizardStore.getState();
-    if (tasks.length === 0) return;
+    const { tasks, agents, mode, category, originalQuery, analysis } = useWizardStore.getState();
+    setSubmitError(null);
+
+    if (tasks.length === 0) {
+      setSubmitError("분석된 작업이 없습니다. 먼저 작업을 분석해주세요.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -97,18 +103,25 @@ export function WizardContainer() {
         body: JSON.stringify({
           title: tasks[0].title,
           description: tasks.map((t) => t.title).join(", "),
+          original_query: originalQuery || null,
           mode: MODE_TO_DB[mode],
+          config: { ...(analysis ? { analysis } : {}), category },
           tasks: tasks.map((t) => ({
             title: t.title,
             description: t.description,
             agent_role: t.agent_role,
             order: t.order,
+            estimated_complexity: t.estimated_complexity,
+            acceptance_criteria: t.acceptance_criteria,
           })),
           agents: agents.map((a) => ({
             role: a.role,
             label: a.label,
             instruction: a.instruction,
             model: a.model,
+            allowedTools: a.allowedTools,
+            chainOrder: a.chainOrder,
+            maxTurns: a.maxTurns,
           })),
         }),
       });
@@ -120,17 +133,21 @@ export function WizardContainer() {
 
       const pipelineId = createJson.data.id;
 
-      // 2. Execute pipeline
-      await fetch(`/api/pipelines/${pipelineId}/execute`, {
+      // 2. Execute pipeline (must await to ensure session is created before redirect)
+      const execRes = await fetch(`/api/pipelines/${pipelineId}/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      if (!execRes.ok) {
+        console.warn("Execute API returned:", execRes.status);
+      }
 
-      // 3. Navigate to monitor page
+      // 3. Navigate to pipeline detail page
       reset();
-      router.push(`/pipelines/${pipelineId}/monitor`);
+      router.push(`/pipelines/${pipelineId}`);
     } catch (err) {
       console.error("Pipeline creation failed:", err);
+      setSubmitError(err instanceof Error ? err.message : "파이프라인 생성 중 오류가 발생했습니다.");
       setSubmitting(false);
     }
   }, [setSubmitting, reset, router]);
@@ -139,8 +156,8 @@ export function WizardContainer() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">새 파이프라인</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">새 파이프라인</h1>
         <WizardStepper currentStep={currentStep} onStepClick={handleStepClick} />
       </div>
 
@@ -159,6 +176,10 @@ export function WizardContainer() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {submitError && (
+        <p className="text-sm text-destructive text-center">{submitError}</p>
+      )}
 
       <WizardActions
         currentStep={currentStep}

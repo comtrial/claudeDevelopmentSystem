@@ -186,7 +186,7 @@ function DiffLineRow({ line, lang, onComment }: DiffLineRowProps) {
             {hovered && lineNo !== null && (
               <button
                 onClick={() => onComment(lineNo)}
-                className="absolute right-2 top-0 bottom-0 my-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                className="absolute right-1 top-0 bottom-0 my-auto h-6 w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                 title="이 라인에 댓글 달기"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
@@ -331,17 +331,31 @@ export function DiffViewer({ change, mode, onLineComment }: DiffViewerProps) {
     [onLineComment]
   );
 
+  // Force unified mode on mobile (split view is not usable on narrow screens)
   if (mode === "split") {
     return (
-      <div className="rounded-b-md border-t overflow-auto max-h-[600px] bg-background">
-        <SplitDiffView lines={lines} lang={lang} onComment={handleComment} />
+      <div className="rounded-b-md border-t overflow-x-auto max-h-[600px] bg-background">
+        {/* Split view only on md+ screens */}
+        <div className="hidden md:block">
+          <SplitDiffView lines={lines} lang={lang} onComment={handleComment} />
+        </div>
+        {/* Unified fallback on mobile */}
+        <div className="md:hidden">
+          <table className="w-full border-collapse">
+            <tbody>
+              {lines.map((line, idx) => (
+                <DiffLineRow key={idx} line={line} lang={lang} onComment={handleComment} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
 
   // Unified view
   return (
-    <div className="rounded-b-md border-t overflow-auto max-h-[600px] bg-background">
+    <div className="rounded-b-md border-t overflow-x-auto max-h-[600px] bg-background">
       <table className="w-full border-collapse">
         <tbody>
           {lines.map((line, idx) => (

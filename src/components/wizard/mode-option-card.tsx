@@ -25,7 +25,7 @@ export function ModeOptionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all",
+        "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all active:scale-[0.98]",
         selected
           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
           : "hover:border-border-strong/50"

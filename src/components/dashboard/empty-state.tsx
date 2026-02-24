@@ -49,25 +49,25 @@ export function EmptyState() {
   return (
     <section
       aria-label="시작 안내"
-      className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-6 text-center"
+      className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 text-center sm:px-6"
     >
       <Music
         className="mb-6 size-12 text-muted-foreground"
         strokeWidth={1.5}
       />
 
-      <h2 className="mb-2 text-2xl font-semibold tracking-tight">
+      <h2 className="mb-2 text-xl font-semibold tracking-tight sm:text-2xl">
         AI 에이전트 오케스트레이터
       </h2>
 
-      <p className="mb-8 max-w-md text-base text-muted-foreground">
+      <p className="mb-6 max-w-md text-sm text-muted-foreground sm:mb-8 sm:text-base">
         AI 에이전트 팀을 구성하고, 파이프라인으로 작업을 자동화하세요.
         결과를 리뷰하고 승인만 하면 됩니다.
       </p>
 
       <Button
         size="lg"
-        className="mb-8 w-full max-w-xs"
+        className="mb-6 w-full max-w-xs sm:mb-8"
         onClick={() => router.push("/pipelines/new")}
       >
         첫 파이프라인 만들기
@@ -77,7 +77,7 @@ export function EmptyState() {
         또는 템플릿으로 시작:
       </p>
 
-      <div className="grid w-full max-w-lg grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {templates.map((template) => (
           <TemplateCard key={template.id} {...template} />
         ))}

@@ -14,7 +14,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const { data, error: dbError } = await supabase
       .from("pipelines")
       .select(
-        "*, agents(*), sessions(*, agent_logs(id, agent_id, level, message, created_at))"
+        "*, agents(*), sessions(*, agent_logs(id, agent_role, level, message, created_at))"
       )
       .eq("id", id)
       .eq("user_id", user.id)

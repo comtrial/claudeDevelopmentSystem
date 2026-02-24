@@ -139,6 +139,11 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
 - Dashboard return loop: Phase 6→0 via "대시보드로" button + recent history section.
 - MVP full cycle: Phase 0→1→2→3→4→5→6→0 complete.
 
+### Input Validation for Claude CLI
+- Claude CLI NLP parse requires **minimum input length** (10 chars) — trivial inputs like "hi" cause JSON parse failures and 422 errors.
+- Always validate both frontend (button disable + hint message) and backend (400 error) to prevent meaningless CLI invocations.
+- Pattern: frontend UX guard first, backend safety net second.
+
 ### Code Quality Patterns
 - All API routes MUST use `getAuthenticatedUser()` from `@/lib/api/auth` (not `createClient()` directly).
 - All responses MUST use `successResponse()` / `handleError()` from `@/lib/api/response`.
@@ -151,3 +156,26 @@ Use `successResponse()` and `handleError()` from `@/lib/api/response`.
 - localhost:3000 execution only — not Vercel serverless.
 - Claude Max subscription = $0 API cost.
 - Hybrid storage: local MD/JSON (running) + Supabase (completed).
+
+### Follow-Up Query Feature
+- Sessions support chain structure via `parent_session_id` + `session_number` fields.
+- Execute route accepts `follow_up_prompt` in body for follow-up sessions from completed/failed pipelines.
+- Max 10 sessions per pipeline enforced in execute route.
+- Follow-up context injection: previous session's logs (last 20 info/warn/error) + code changes passed to `buildTaskPrompt()`.
+- LogViewer supports `sessionId` prop for session-specific log filtering; clears logs on session switch.
+- SessionSelector: Tabs for ≤3 sessions, Select dropdown for 4+.
+
+### Agent Chain Architecture v3
+- **Chain model**: PM → Engineer → Reviewer sequential chain (not task-per-agent isolation)
+- **Mode filtering**: `plan_only` → PM only, `review` → Engineer+Reviewer, `auto_edit` → all 3
+- **System/User prompt separation**: Role identity + permanent rules → `--append-system-prompt`, methodology + tasks → `-p`
+- **XML structured prompts**: `<instructions>`, `<tasks>`, `<artifact>`, `<context>` tags for clear section separation
+- **CLAUDE.md auto-injection**: `readFileSync` loads CLAUDE.md into system prompt (max 8K chars)
+- **Methodology prompts**: PM has Step 0 (Project Discovery) + scope guard + self-check; Engineer has tool use strategy + dry run + incremental; Reviewer has mandatory file reading + line citations + priority order
+- **Negative examples**: Each role has "Common Mistakes to AVOID" section
+- **Feedback loop**: Reviewer CHANGES_REQUESTED → Engineer rework → Reviewer re-verify (max 2 cycles)
+- **Structured verdict**: Reviewer outputs ```` ```verdict {"approved": bool, ...} ``` ```` for reliable parsing with JSON→text fallback
+- **Validation pipeline**: TypeCheck (`tsc --noEmit`) → Build (`npm run build`) → Lint (`eslint`) before Reviewer phase
+- **Artifact budget**: 60K chars per agent (head 70% + tail 30%), 200K save to DB config JSONB
+- **Allowed tools**: Added `Glob` and `Grep` to default tools list
+- Config fields: `chainOrder` (agent execution order), `maxTurns` (per-agent turn limit) stored in agents.config JSONB

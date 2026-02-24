@@ -8,24 +8,43 @@ import { useWizardStore } from "@/stores/wizard-store";
 import type { AgentConfig } from "@/types/wizard";
 import { AgentConfigCard } from "./agent-config-card";
 
+const ALL_TOOLS = [
+  "mcp__claude_ai_Notion",
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "WebFetch",
+  "WebSearch",
+];
+
 const DEFAULT_AGENTS: AgentConfig[] = [
   {
     role: "pm",
     label: "PM",
     instruction: "",
-    model: "claude-sonnet-4-5-20250514",
+    model: "claude-opus-4-6",
+    allowedTools: [...ALL_TOOLS],
+    chainOrder: 1,
+    maxTurns: 25,
   },
   {
     role: "engineer",
     label: "Engineer",
     instruction: "",
-    model: "claude-sonnet-4-5-20250514",
+    model: "claude-opus-4-6",
+    allowedTools: [...ALL_TOOLS],
+    chainOrder: 2,
+    maxTurns: 30,
   },
   {
     role: "reviewer",
     label: "Reviewer",
     instruction: "",
-    model: "claude-sonnet-4-5-20250514",
+    model: "claude-opus-4-6",
+    allowedTools: [...ALL_TOOLS],
+    chainOrder: 3,
+    maxTurns: 20,
   },
 ];
 

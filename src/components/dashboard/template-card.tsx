@@ -44,7 +44,7 @@ export function TemplateCard({
       aria-label={`${title} 템플릿으로 시작`}
       onClick={handleSelect}
       onKeyDown={handleKeyDown}
-      className="group relative cursor-pointer rounded-lg border border-border bg-card p-4 transition-all duration-150 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group relative cursor-pointer rounded-lg border border-border bg-card p-4 transition-all duration-150 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
     >
       <Icon
         className="mb-3 size-6 text-muted-foreground transition-colors group-hover:text-primary"

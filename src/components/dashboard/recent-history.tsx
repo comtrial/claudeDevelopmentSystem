@@ -79,7 +79,7 @@ export function RecentHistory({ className }: RecentHistoryProps) {
                 <button
                   type="button"
                   onClick={() => router.push(`/history/${item.pipeline_id}`)}
-                  className="flex w-full items-center justify-between rounded-md border-b border-border px-2 py-3 text-left transition-colors last:border-0 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex w-full min-h-[44px] items-center justify-between rounded-md border-b border-border px-2 py-3 text-left transition-colors last:border-0 hover:bg-accent/30 active:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="flex items-center gap-2">
                     {isSuccess ? (
@@ -96,7 +96,7 @@ export function RecentHistory({ className }: RecentHistoryProps) {
                       />
                     )}
                     <span className="sr-only">{isSuccess ? "성공" : "실패"}</span>
-                    <span className="truncate text-sm">{item.title}</span>
+                    <span className="truncate text-sm max-w-[50vw] sm:max-w-none">{item.title}</span>
                   </span>
                   <span className="ml-4 shrink-0 text-xs text-muted-foreground">
                     {formatRelativeTime(item.created_at)}

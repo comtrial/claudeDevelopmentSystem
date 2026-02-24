@@ -19,7 +19,7 @@ export function DashboardContent() {
   if (pipelines.length === 0) return <EmptyState />;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <PipelineList pipelines={pipelines} />
       <RecentHistory />
     </div>

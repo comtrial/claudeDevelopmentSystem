@@ -51,12 +51,12 @@ export default function PipelinesPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">파이프라인</h1>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">파이프라인</h1>
           <p className="text-sm text-muted-foreground mt-1">AI 에이전트 파이프라인 목록</p>
         </div>
-        <Button asChild>
+        <Button asChild className="min-h-[44px] shrink-0">
           <Link href="/pipelines/new">
             <Plus className="mr-2 h-4 w-4" />
             새 파이프라인
@@ -105,7 +105,7 @@ export default function PipelinesPage() {
               <Link
                 key={p.id}
                 href={`/pipelines/${p.id}`}
-                className="block rounded-xl border border-border p-4 transition-colors hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="block rounded-xl border border-border p-4 transition-colors hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">

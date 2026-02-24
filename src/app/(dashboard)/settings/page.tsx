@@ -289,17 +289,17 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">설정</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">설정</h1>
         <p className="text-sm text-muted-foreground mt-1">계정 및 시스템 환경을 구성합니다</p>
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">프로필</TabsTrigger>
-          <TabsTrigger value="theme">테마</TabsTrigger>
-          <TabsTrigger value="tokens">토큰</TabsTrigger>
-          <TabsTrigger value="notifications">알림</TabsTrigger>
-          <TabsTrigger value="apikey">API 키</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto no-scrollbar">
+          <TabsTrigger value="profile" className="flex-1 min-w-[64px] text-xs sm:text-sm px-2 sm:px-3">프로필</TabsTrigger>
+          <TabsTrigger value="theme" className="flex-1 min-w-[56px] text-xs sm:text-sm px-2 sm:px-3">테마</TabsTrigger>
+          <TabsTrigger value="tokens" className="flex-1 min-w-[56px] text-xs sm:text-sm px-2 sm:px-3">토큰</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 min-w-[56px] text-xs sm:text-sm px-2 sm:px-3">알림</TabsTrigger>
+          <TabsTrigger value="apikey" className="flex-1 min-w-[64px] text-xs sm:text-sm px-2 sm:px-3">API 키</TabsTrigger>
         </TabsList>
 
         {/* ── 프로필 탭 ──────────────────────────────────────── */}
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                   type="email"
                   value={profile?.email ?? ""}
                   readOnly
-                  className="bg-muted/50 cursor-not-allowed"
+                  className="bg-muted/50 cursor-not-allowed text-base md:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">이메일은 변경할 수 없습니다.</p>
               </div>
@@ -328,10 +328,11 @@ export default function SettingsPage() {
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="표시 이름을 입력하세요"
                   maxLength={100}
+                  className="text-base md:text-sm"
                 />
               </div>
 
-              <Button onClick={() => void handleSaveProfile()} disabled={isSavingProfile}>
+              <Button className="min-h-[44px]" onClick={() => void handleSaveProfile()} disabled={isSavingProfile}>
                 {isSavingProfile ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
                 저장
               </Button>
@@ -421,7 +422,7 @@ export default function SettingsPage() {
 
               <div className="space-y-3">
                 <Label>경고 임계값 (%)</Label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {(settings.tokenPolicy.warningThresholds).map((threshold, i) => (
                     <div key={i} className="space-y-1">
                       <p className="text-xs text-muted-foreground">
@@ -433,7 +434,7 @@ export default function SettingsPage() {
                         max={100}
                         value={threshold}
                         onChange={(e) => handleThresholdChange(i as 0 | 1 | 2, e.target.value)}
-                        className="text-center"
+                        className="text-center text-base md:text-sm min-h-[44px]"
                       />
                     </div>
                   ))}
@@ -442,12 +443,13 @@ export default function SettingsPage() {
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5 min-w-0">
                   <Label>예산 초과 시 자동 중지</Label>
                   <p className="text-xs text-muted-foreground">토큰 예산을 초과하면 파이프라인을 자동으로 중지합니다</p>
                 </div>
                 <Switch
+                  className="shrink-0"
                   checked={settings.tokenPolicy.autoStopOnBudget}
                   onCheckedChange={handleAutoStopChange}
                 />
@@ -486,12 +488,13 @@ export default function SettingsPage() {
                   },
                 ] as const
               ).map((item) => (
-                <div key={item.key} className="flex items-center justify-between py-2">
-                  <div className="space-y-0.5">
+                <div key={item.key} className="flex items-center justify-between gap-4 py-2">
+                  <div className="space-y-0.5 min-w-0">
                     <Label>{item.label}</Label>
                     <p className="text-xs text-muted-foreground">{item.description}</p>
                   </div>
                   <Switch
+                    className="shrink-0"
                     checked={settings.notifications[item.key]}
                     onCheckedChange={(checked) => handleNotificationChange(item.key, checked)}
                   />
@@ -549,7 +552,7 @@ export default function SettingsPage() {
 
           <div className="space-y-2">
             <Label htmlFor="api-key-input">{maskedKey ? "새 API 키로 교체" : "API 키 입력"}</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1">
                 <Input
                   id="api-key-input"
@@ -557,17 +560,18 @@ export default function SettingsPage() {
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="sk-ant-..."
-                  className="font-mono pr-10"
+                  className="font-mono pr-10 text-base md:text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setApiKeyVisible((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   {apiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               <Button
+                className="min-h-[44px] w-full sm:w-auto"
                 onClick={() => void handleSaveApiKey()}
                 disabled={!apiKey.trim() || isSavingApiKey}
               >

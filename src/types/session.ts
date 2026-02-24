@@ -17,6 +17,17 @@ export interface Session {
   started_at: Timestamp;
   completed_at: Timestamp | null;
   metadata: Record<string, unknown>;
+  follow_up_prompt: string | null;
+  parent_session_id: string | null;
+  session_number: number;
+}
+
+export interface SessionSummary {
+  id: string;
+  status: SessionStatus;
+  session_number: number;
+  follow_up_prompt: string | null;
+  started_at: Timestamp;
 }
 
 export interface Profile {

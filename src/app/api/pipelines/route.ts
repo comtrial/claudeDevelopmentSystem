@@ -27,6 +27,7 @@ interface PipelineRow {
   created_at: string;
   updated_at: string;
   agents: { id: string; role: string }[];
+  tasks: { id: string; status: string }[];
   sessions: { id: string; status: string; token_usage: number; token_limit: number }[];
 }
 
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("pipelines")
-      .select("id, title, description, status, mode, created_at, updated_at, agents(id, role), sessions(id, status, token_usage, token_limit)")
+      .select("id, title, description, status, mode, created_at, updated_at, agents(id, role), tasks(id, status), sessions(id, status, token_usage, token_limit)")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false });
 
@@ -80,6 +81,16 @@ export async function GET(request: NextRequest) {
     const result: PipelineSummary[] = paginated.map((p) => {
       const roles = [...new Set(p.agents.map((a) => a.role))];
 
+      // Build task summary counts
+      const tasks = p.tasks ?? [];
+      const taskSummary = {
+        total: tasks.length,
+        completed: tasks.filter((t) => t.status === "completed").length,
+        in_progress: tasks.filter((t) => t.status === "in_progress").length,
+        failed: tasks.filter((t) => t.status === "failed").length,
+        pending: tasks.filter((t) => t.status === "pending" || t.status === "skipped").length,
+      };
+
       // Pick latest session by finding the one with the most recent data
       // Sessions come ordered by default; pick first as latest
       const latestSession = p.sessions.length > 0 ? p.sessions[0] : null;
@@ -96,6 +107,7 @@ export async function GET(request: NextRequest) {
           total: p.agents.length,
           roles,
         },
+        task_summary: taskSummary,
         latest_session: latestSession
           ? {
               id: latestSession.id,
@@ -126,6 +138,8 @@ interface TaskInput {
   description?: string;
   agent_role?: string;
   order: number;
+  estimated_complexity?: string;
+  acceptance_criteria?: string;
 }
 
 interface AgentInput {
@@ -133,6 +147,9 @@ interface AgentInput {
   label?: string;
   instruction?: string;
   model?: string;
+  allowedTools?: string[];
+  chainOrder?: number;
+  maxTurns?: number;
 }
 
 // POST /api/pipelines - Create a new pipeline with optional tasks and agents
@@ -179,12 +196,13 @@ export async function POST(request: NextRequest) {
       .insert({
         title: body.title.trim(),
         description: body.description ?? null,
+        original_query: body.original_query ?? null,
         mode: body.mode ?? "auto_edit",
         config: body.config ?? {},
         preset_template_id: body.preset_template_id ?? null,
         user_id: user.id,
       })
-      .select("id, title, description, status, mode, config, preset_template_id, created_at, updated_at")
+      .select("id, title, description, original_query, status, mode, config, preset_template_id, created_at, updated_at")
       .single();
 
     if (pipelineError || !pipeline) {
@@ -205,6 +223,11 @@ export async function POST(request: NextRequest) {
           order_index: t.order ?? i + 1,
           type: "general" as const,
           status: "pending" as const,
+          input_data: {
+            ...(t.agent_role ? { agent_role: t.agent_role } : {}),
+            ...(t.estimated_complexity ? { estimated_complexity: t.estimated_complexity } : {}),
+            ...(t.acceptance_criteria ? { acceptance_criteria: t.acceptance_criteria } : {}),
+          },
         }));
 
         const { data: tasks, error: tasksError } = await supabase
@@ -225,8 +248,13 @@ export async function POST(request: NextRequest) {
           pipeline_id: pipelineId,
           role: a.role,
           instruction: a.instruction ?? null,
-          model: a.model ?? "claude-sonnet-4-5-20250514",
-          config: a.label ? { label: a.label } : {},
+          model: a.model ?? "claude-opus-4-6",
+          config: {
+            ...(a.label ? { label: a.label } : {}),
+            ...(a.allowedTools?.length ? { allowedTools: a.allowedTools } : {}),
+            ...(a.maxTurns ? { maxTurns: a.maxTurns } : {}),
+            chainOrder: a.chainOrder ?? ({ pm: 1, engineer: 2, reviewer: 3 }[a.role] ?? 2),
+          },
         }));
 
         const { data: agents, error: agentsError } = await supabase

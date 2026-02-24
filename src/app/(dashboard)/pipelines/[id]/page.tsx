@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -11,14 +11,22 @@ import { AgentStatusCard } from "@/components/pipeline/agent-status-card";
 import { PipelineControls } from "@/components/pipeline/pipeline-controls";
 import { LogViewer } from "@/components/pipeline/log-viewer";
 import { SessionLifetimeGauge } from "@/components/pipeline/session-lifetime-gauge";
+import { FollowUpInput } from "@/components/pipeline/follow-up-input";
+import { ExecutionSummary } from "@/components/pipeline/execution-summary";
+import { SessionSelector } from "@/components/pipeline/session-selector";
+import { TaskProgressTimeline } from "@/components/pipeline/task-progress-timeline";
 import { usePipelineRealtime } from "@/lib/realtime/use-pipeline-realtime";
 import {
   usePipelineStore,
   selectActivePipeline,
   selectAgents,
+  selectTasks,
+  selectLogs,
   selectConnectionStatus,
 } from "@/stores/pipeline-store";
-import { ScrollText, LayoutGrid, ArrowLeft } from "lucide-react";
+import type { SessionSummary } from "@/types/session";
+import type { Task } from "@/types/pipeline";
+import { ScrollText, LayoutGrid, ArrowLeft, MessageSquareText, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type PipelineStatus = "draft" | "running" | "paused" | "completed" | "failed" | "cancelled";
@@ -48,12 +56,15 @@ export default function PipelineMonitorPage() {
 
   const activePipeline = usePipelineStore(selectActivePipeline);
   const agents = usePipelineStore(selectAgents);
+  const tasks = usePipelineStore(selectTasks);
+  const logs = usePipelineStore(selectLogs);
   const connectionStatus = usePipelineStore(selectConnectionStatus);
-  const { setActivePipeline, setAgents, reset } = usePipelineStore();
+  const { setActivePipeline, setAgents, setTasks, reset, clearLogs, setActiveSessionId } = usePipelineStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [showLogs, setShowLogs] = useState(false);
+  const [showLogs, setShowLogs] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionIdLocal] = useState<string | null>(null);
 
   // Initialize realtime subscription
   usePipelineRealtime(pipelineId);
@@ -85,24 +96,73 @@ export default function PipelineMonitorPage() {
           lastActivity: (a.updated_at as string | null) ?? new Date().toISOString(),
         }));
         setAgents(mappedAgents);
+
+        // Load tasks
+        setTasks((data.tasks as Task[]) ?? []);
+
+        // Set active session to the latest one
+        const sessionList = (data.sessions as Record<string, unknown>[] | null) ?? [];
+        if (sessionList.length > 0) {
+          const latestId = sessionList[0].id as string;
+          setActiveSessionIdLocal(latestId);
+          setActiveSessionId(latestId);
+        }
       })
       .catch(() => setError("파이프라인 데이터를 불러오는 데 실패했습니다."))
       .finally(() => setIsLoading(false));
 
     return () => reset();
-  }, [pipelineId, setActivePipeline, setAgents, reset]);
+  }, [pipelineId, setActivePipeline, setAgents, setTasks, reset, setActiveSessionId]);
 
   const status = (activePipeline?.status as PipelineStatus) ?? "draft";
   const title = (activePipeline?.title as string) ?? "Pipeline";
+  const originalQuery = (activePipeline?.original_query as string | null) ?? null;
+  const pipelineConfig = (activePipeline?.config as Record<string, unknown> | null) ?? null;
+  const analysis = (pipelineConfig?.analysis as { intent?: string; scope?: string; reasoning?: string } | null) ?? null;
 
-  // Calculate overall progress from session metadata
+  // Build session summaries from pipeline data
   const sessions = (activePipeline?.sessions as Record<string, unknown>[] | null) ?? [];
-  const latestSession = sessions[0] ?? null;
-  const sessionMetadata = (latestSession?.metadata as Record<string, unknown> | null) ?? null;
+  const sessionSummaries: SessionSummary[] = sessions.map((s) => ({
+    id: s.id as string,
+    status: (s.status as SessionSummary["status"]) ?? "initializing",
+    session_number: (s.session_number as number) ?? 1,
+    follow_up_prompt: (s.follow_up_prompt as string | null) ?? null,
+    started_at: (s.started_at as string) ?? "",
+  }));
+
+  // Find active session summary for follow-up prompt display
+  const activeSessionSummary = sessionSummaries.find((s) => s.id === activeSessionId) ?? null;
+  const activeSessionFollowUp = activeSessionSummary?.follow_up_prompt ?? null;
+
+  // Find active session data for progress/token display
+  const activeSession = sessions.find((s) => s.id === activeSessionId) ?? sessions[0] ?? null;
+  const sessionMetadata = (activeSession?.metadata as Record<string, unknown> | null) ?? null;
   const overallProgress = (sessionMetadata?.progress_percent as number) ?? 0;
-  const tokenUsage = (latestSession?.token_usage as number) ?? 0;
-  const tokenLimit = (latestSession?.token_limit as number) ?? 100000;
-  const sessionId = (latestSession?.id as string) ?? null;
+  const tokenUsage = (activeSession?.token_usage as number) ?? 0;
+  const tokenLimit = (activeSession?.token_limit as number) ?? 100000;
+  const sessionId = (activeSession?.id as string) ?? null;
+
+  const handleSessionSelect = useCallback((id: string) => {
+    setActiveSessionIdLocal(id);
+    setActiveSessionId(id);
+    clearLogs();
+  }, [setActiveSessionId, clearLogs]);
+
+  const handleFollowUpSubmit = useCallback((newSessionId: string) => {
+    // Refresh pipeline data to pick up the new session
+    fetch(`/api/pipelines/${pipelineId}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (!res.error) {
+          setActivePipeline(res.data);
+        }
+      });
+
+    // Switch to new session
+    clearLogs();
+    setActiveSessionIdLocal(newSessionId);
+    setActiveSessionId(newSessionId);
+  }, [pipelineId, setActivePipeline, clearLogs, setActiveSessionId]);
 
   if (isLoading) {
     return (
@@ -159,6 +219,44 @@ export default function PipelineMonitorPage() {
         </Badge>
       </div>
 
+      {/* Query display */}
+      {(originalQuery || activeSessionFollowUp) && (
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+          {originalQuery && (
+            <div className="flex gap-2">
+              <MessageSquareText className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground mb-1">원본 질의</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{originalQuery}</p>
+              </div>
+            </div>
+          )}
+          {analysis?.intent && (
+            <div className="flex gap-2" data-testid="analysis-intent">
+              <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-yellow-500" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-yellow-600 mb-1">시스템 이해</p>
+                <p className="text-sm">{analysis.intent}</p>
+                {analysis.reasoning && (
+                  <p className="text-xs text-muted-foreground mt-1">{analysis.reasoning}</p>
+                )}
+              </div>
+            </div>
+          )}
+          {activeSessionFollowUp && (
+            <div className="flex gap-2">
+              <MessageSquareText className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-blue-500 mb-1">
+                  후속 질의 #{activeSessionSummary?.session_number ?? ""}
+                </p>
+                <p className="text-sm whitespace-pre-wrap break-words">{activeSessionFollowUp}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Overall progress */}
       <div className="space-y-1.5">
         <div className="flex justify-between text-sm text-muted-foreground">
@@ -186,7 +284,7 @@ export default function PipelineMonitorPage() {
         {agents.length === 0 ? (
           <p className="text-sm text-muted-foreground">에이전트가 없습니다.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
             {agents.map((agent) => (
               <AgentStatusCard
                 key={agent.id}
@@ -200,8 +298,13 @@ export default function PipelineMonitorPage() {
         )}
       </div>
 
+      {/* Task progress timeline */}
+      {tasks.length > 0 && (
+        <TaskProgressTimeline tasks={tasks} />
+      )}
+
       {/* Action bar */}
-      <div className="flex items-center gap-3 flex-wrap border-t pt-4">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap border-t pt-4">
         <PipelineControls
           pipelineId={pipelineId}
           status={status}
@@ -226,10 +329,37 @@ export default function PipelineMonitorPage() {
         )}
       </div>
 
-      {/* Log viewer */}
-      {showLogs && sessionId && (
-        <div className="border rounded-xl overflow-hidden">
-          <LogViewer pipelineId={pipelineId} />
+      {/* Execution summary (shown when completed/failed) */}
+      {(status === "completed" || status === "failed") && logs.length > 0 && (
+        <ExecutionSummary logs={logs} status={status} />
+      )}
+
+      {/* Follow-up input (shown when completed/failed) */}
+      {(status === "completed" || status === "failed") && (
+        <div className="border rounded-lg p-3">
+          <FollowUpInput
+            pipelineId={pipelineId}
+            onSubmit={handleFollowUpSubmit}
+          />
+        </div>
+      )}
+
+      {/* Session selector (shown when multiple sessions exist) */}
+      {sessionSummaries.length > 1 && activeSessionId && (
+        <SessionSelector
+          sessions={sessionSummaries}
+          activeSessionId={activeSessionId}
+          onSelect={handleSessionSelect}
+        />
+      )}
+
+      {/* Log viewer — full-bleed on mobile */}
+      {showLogs && (
+        <div className="-mx-4 sm:mx-0 sm:border sm:rounded-xl overflow-hidden">
+          <LogViewer
+            pipelineId={pipelineId}
+            sessionId={activeSessionId ?? undefined}
+          />
         </div>
       )}
     </div>

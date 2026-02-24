@@ -5,7 +5,7 @@ import { WizardContainer } from "@/components/wizard/wizard-container";
 
 export default function NewPipelinePage() {
   return (
-    <div className="container py-6">
+    <div className="container px-4 py-4 sm:px-6 sm:py-6">
       <Suspense fallback={<WizardSkeleton />}>
         <WizardContainer />
       </Suspense>

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedUser } from "@/lib/api/auth";
 import { successResponse, handleError } from "@/lib/api/response";
 import { Errors } from "@/lib/api/errors";
 
 type Params = { params: Promise<{ id: string }> };
+
+// Service role client for reading logs (bypasses RLS JOIN complexity)
+function getServiceClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 // GET /api/pipelines/[id]/logs
 // Query params: cursor, limit (default 50, max 200), agent_id, level
@@ -12,7 +21,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { supabase, user } = await getAuthenticatedUser();
     const { id } = await params;
 
-    // Verify pipeline ownership
+    // Verify pipeline ownership (uses user's auth)
     const { data: pipeline, error: fetchErr } = await supabase
       .from("pipelines")
       .select("id")
@@ -24,36 +33,57 @@ export async function GET(request: NextRequest, { params }: Params) {
       throw Errors.notFound("Pipeline");
     }
 
+    // Use service role for log queries (avoids RLS JOIN issues with agent_logs)
+    const admin = getServiceClient();
+
     const { searchParams } = new URL(request.url);
     const cursor = searchParams.get("cursor");
     const rawLimit = parseInt(searchParams.get("limit") ?? "50");
     const limit = Math.min(Math.max(rawLimit, 1), 200);
     const agentId = searchParams.get("agent_id");
     const level = searchParams.get("level");
+    const sessionIdParam = searchParams.get("session_id");
 
-    // Get the latest session for this pipeline to fetch logs
-    const { data: session } = await supabase
-      .from("sessions")
-      .select("id")
-      .eq("pipeline_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    // Use specified session or fall back to latest session
+    let sessionId: string;
+    if (sessionIdParam) {
+      // Verify the session belongs to this pipeline
+      const { data: targetSession } = await admin
+        .from("sessions")
+        .select("id")
+        .eq("id", sessionIdParam)
+        .eq("pipeline_id", id)
+        .single();
 
-    if (!session) {
-      return NextResponse.json(successResponse({ logs: [], nextCursor: null }));
+      if (!targetSession) {
+        return NextResponse.json(successResponse({ logs: [], nextCursor: null }));
+      }
+      sessionId = targetSession.id;
+    } else {
+      // Get the latest session for this pipeline
+      const { data: session } = await admin
+        .from("sessions")
+        .select("id")
+        .eq("pipeline_id", id)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!session) {
+        return NextResponse.json(successResponse({ logs: [], nextCursor: null }));
+      }
+      sessionId = session.id;
     }
 
-    let query = supabase
+    let query = admin
       .from("agent_logs")
       .select("id, session_id, agent_role, level, message, metadata, created_at")
-      .eq("session_id", session.id)
+      .eq("session_id", sessionId)
       .order("created_at", { ascending: true })
-      .limit(limit + 1); // fetch one extra to determine if there are more
+      .limit(limit + 1);
 
     if (cursor) {
-      // cursor is the last log id — use it for keyset pagination via created_at
-      const { data: cursorLog } = await supabase
+      const { data: cursorLog } = await admin
         .from("agent_logs")
         .select("created_at")
         .eq("id", cursor)

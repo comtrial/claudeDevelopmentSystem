@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { PipelineSummary, LatestSession } from "@/types/pipeline-summary";
+import type { Task, TaskStatus } from "@/types/pipeline";
 
 // ─── Dashboard store slice (pipeline list) ─────────────────────────────────
 
@@ -47,16 +48,22 @@ export interface ActiveLog {
 interface MonitoringState {
   activePipeline: Record<string, unknown> | null;
   agents: ActiveAgent[];
+  tasks: Task[];
   logs: ActiveLog[];
   connectionStatus: ConnectionStatus;
+  activeSessionId: string | null;
 }
 
 interface MonitoringActions {
   setActivePipeline: (pipeline: Record<string, unknown> | null) => void;
   setAgents: (agents: ActiveAgent[]) => void;
+  setTasks: (tasks: Task[]) => void;
+  updateTaskStatus: (taskId: string, status: TaskStatus, outputData?: Record<string, unknown>) => void;
   updatePipelineStatus: (pipeline: Record<string, unknown>) => void;
   updateAgentStatus: (agent: Partial<ActiveAgent> & { id: string }) => void;
   appendLog: (log: ActiveLog) => void;
+  clearLogs: () => void;
+  setActiveSessionId: (id: string | null) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   reset: () => void;
 }
@@ -96,8 +103,10 @@ export const usePipelineStore = create<PipelineStore>()(
       // ── Monitoring state
       activePipeline: null,
       agents: [],
+      tasks: [],
       logs: [],
       connectionStatus: "disconnected",
+      activeSessionId: null,
 
       // ── List actions
       setPipelines: (pipelines) => {
@@ -147,6 +156,24 @@ export const usePipelineStore = create<PipelineStore>()(
         set({ agents }, false, "setAgents");
       },
 
+      setTasks: (tasks) => {
+        set({ tasks }, false, "setTasks");
+      },
+
+      updateTaskStatus: (taskId, status, outputData) => {
+        set(
+          (state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, status, ...(outputData ? { output_data: outputData } : {}), updated_at: new Date().toISOString() }
+                : t
+            ),
+          }),
+          false,
+          "updateTaskStatus"
+        );
+      },
+
       updatePipelineStatus: (pipeline) => {
         set(
           (state) => ({
@@ -174,6 +201,8 @@ export const usePipelineStore = create<PipelineStore>()(
       appendLog: (log) => {
         set(
           (state) => {
+            // Deduplicate by id
+            if (state.logs.some((l) => l.id === log.id)) return state;
             const next = [...state.logs, log];
             // Keep buffer bounded
             return { logs: next.length > MAX_LOG_BUFFER ? next.slice(-MAX_LOG_BUFFER) : next };
@@ -183,13 +212,21 @@ export const usePipelineStore = create<PipelineStore>()(
         );
       },
 
+      clearLogs: () => {
+        set({ logs: [] }, false, "clearLogs");
+      },
+
+      setActiveSessionId: (activeSessionId) => {
+        set({ activeSessionId }, false, "setActiveSessionId");
+      },
+
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus }, false, "setConnectionStatus");
       },
 
       reset: () => {
         set(
-          { activePipeline: null, agents: [], logs: [], connectionStatus: "disconnected" },
+          { activePipeline: null, agents: [], tasks: [], logs: [], connectionStatus: "disconnected", activeSessionId: null },
           false,
           "reset"
         );
@@ -209,5 +246,7 @@ export const selectRunningPipelines = (state: PipelineStore) =>
   state.pipelines.filter((p) => p.status === "running");
 export const selectActivePipeline = (state: PipelineStore) => state.activePipeline;
 export const selectAgents = (state: PipelineStore) => state.agents;
+export const selectTasks = (state: PipelineStore) => state.tasks;
 export const selectLogs = (state: PipelineStore) => state.logs;
 export const selectConnectionStatus = (state: PipelineStore) => state.connectionStatus;
+export const selectActiveSessionId = (state: PipelineStore) => state.activeSessionId;

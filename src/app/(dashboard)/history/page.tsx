@@ -179,44 +179,46 @@ export default function HistoryPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">작업 히스토리</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">작업 히스토리</h1>
         <p className="text-sm text-muted-foreground mt-1">완료된 파이프라인 실행 내역</p>
       </div>
 
       {/* 필터 바 */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="파이프라인 검색..."
-            className="pl-9"
+            className="pl-9 text-base md:text-sm"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
 
-        <Select value={status} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="상태" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">전체</SelectItem>
-            <SelectItem value="completed">완료</SelectItem>
-            <SelectItem value="failed">실패</SelectItem>
-            <SelectItem value="cancelled">취소됨</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-3 w-full sm:w-auto">
+          <Select value={status} onValueChange={handleStatusChange}>
+            <SelectTrigger className="flex-1 sm:w-36">
+              <SelectValue placeholder="상태" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체</SelectItem>
+              <SelectItem value="completed">완료</SelectItem>
+              <SelectItem value="failed">실패</SelectItem>
+              <SelectItem value="cancelled">취소됨</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={sort} onValueChange={handleSortChange}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="정렬" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">최신순</SelectItem>
-            <SelectItem value="oldest">오래된순</SelectItem>
-            <SelectItem value="most_tokens">토큰 많은순</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={sort} onValueChange={handleSortChange}>
+            <SelectTrigger className="flex-1 sm:w-36">
+              <SelectValue placeholder="정렬" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">최신순</SelectItem>
+              <SelectItem value="oldest">오래된순</SelectItem>
+              <SelectItem value="most_tokens">토큰 많은순</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* 결과 */}
@@ -258,11 +260,12 @@ export default function HistoryPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[44px] min-w-[44px]"
                 disabled={page <= 1}
                 onClick={() => handlePageChange(page - 1)}
               >
                 <ChevronLeft className="h-4 w-4" />
-                이전
+                <span className="hidden sm:inline">이전</span>
               </Button>
               <span className="text-sm text-muted-foreground">
                 {page} / {data.totalPages}
@@ -270,10 +273,11 @@ export default function HistoryPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[44px] min-w-[44px]"
                 disabled={page >= data.totalPages}
                 onClick={() => handlePageChange(page + 1)}
               >
-                다음
+                <span className="hidden sm:inline">다음</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -297,13 +301,13 @@ function HistoryCard({ pipeline, onClick }: HistoryCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-border p-4 transition-colors hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="w-full text-left rounded-xl border border-border p-4 transition-colors hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-start justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Icon className={cn("h-5 w-5 shrink-0", config.className)} strokeWidth={1.5} />
           <div className="min-w-0">
-            <p className="font-medium truncate">{pipeline.title}</p>
+            <p className="font-medium truncate text-sm sm:text-base">{pipeline.title}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {pipeline.completed_at
                 ? formatRelativeTime(pipeline.completed_at)
@@ -332,7 +336,7 @@ function HistoryCard({ pipeline, onClick }: HistoryCardProps) {
         )}
       />
 
-      <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Users className="h-3 w-3" />
           에이전트 {pipeline.agent_count}명

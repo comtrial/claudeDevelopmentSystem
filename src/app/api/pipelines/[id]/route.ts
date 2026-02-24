@@ -11,18 +11,42 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const { supabase, user } = await getAuthenticatedUser();
     const { id } = await params;
 
-    // Fetch pipeline with tasks, agents, and latest session
-    const { data, error: dbError } = await supabase
+    // Fetch pipeline base data
+    const { data: pipeline, error: pipelineError } = await supabase
       .from("pipelines")
-      .select("*, tasks(*), agents(*), sessions(id, status, token_usage, token_limit, started_at, completed_at, metadata)")
+      .select("*")
       .eq("id", id)
       .eq("user_id", user.id)
-      .order("created_at", { foreignTable: "sessions", ascending: false })
       .single();
 
-    if (dbError || !data) {
+    if (pipelineError || !pipeline) {
       throw Errors.notFound("Pipeline");
     }
+
+    // Fetch related data separately to avoid RLS join issues
+    const [tasksResult, agentsResult, sessionsResult] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("pipeline_id", id)
+        .order("order_index", { ascending: true }),
+      supabase
+        .from("agents")
+        .select("*")
+        .eq("pipeline_id", id),
+      supabase
+        .from("sessions")
+        .select("id, status, token_usage, token_limit, started_at, completed_at, metadata, follow_up_prompt, parent_session_id, session_number")
+        .eq("pipeline_id", id)
+        .order("started_at", { ascending: false }),
+    ]);
+
+    const data = {
+      ...pipeline,
+      tasks: tasksResult.data ?? [],
+      agents: agentsResult.data ?? [],
+      sessions: sessionsResult.data ?? [],
+    };
 
     return NextResponse.json(successResponse(data));
   } catch (err) {

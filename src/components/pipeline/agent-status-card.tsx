@@ -111,7 +111,42 @@ export function AgentStatusCard({ agent, onViewLogs }: AgentStatusCardProps) {
           if (e.key === "Enter" || e.key === " ") onViewLogs(agent.id);
         }}
       >
-        <CardHeader className="pb-2 pt-4 px-4 flex flex-row items-center justify-between space-y-0">
+        {/* === Mobile: compact vertical layout === */}
+        <div className="sm:hidden p-3">
+          <div className="flex items-start gap-2">
+            {/* Icon */}
+            <div className={cn("shrink-0 flex items-center justify-center h-8 w-8 rounded-md bg-muted/50 mt-0.5")}>
+              <RoleIcon className={cn("h-4 w-4", roleColor)} />
+            </div>
+            <div className="flex-1 min-w-0">
+              {/* Name + Status indicator inline */}
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium text-sm truncate">{agent.name}</p>
+                <StatusIndicator status={agent.status} />
+              </div>
+              {/* Role label */}
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {ROLE_LABELS[agent.role]} · {STATUS_LABELS[agent.status]}
+              </p>
+              {/* Progress bar + percentage inline */}
+              <div className="flex items-center gap-2 mt-1.5">
+                <Progress value={agent.progress} className="h-1 flex-1" />
+                <span className="text-[10px] text-muted-foreground tabular-nums w-7 text-right shrink-0">
+                  {agent.progress}%
+                </span>
+              </div>
+              {/* Current task */}
+              {agent.currentTask && (
+                <p className="text-[11px] text-muted-foreground truncate mt-1">
+                  ▸ {agent.currentTask}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* === Desktop: original vertical card layout === */}
+        <CardHeader className="hidden sm:flex pb-2 pt-4 px-4 flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
             <RoleIcon className={cn("h-4 w-4", roleColor)} />
             <span className="font-medium text-sm truncate max-w-[8rem]">{agent.name}</span>
@@ -124,7 +159,7 @@ export function AgentStatusCard({ agent, onViewLogs }: AgentStatusCardProps) {
           </div>
         </CardHeader>
 
-        <CardContent className="px-4 pb-4 space-y-3">
+        <CardContent className="hidden sm:block px-4 pb-4 space-y-3">
           {/* Role */}
           <p className="text-xs text-muted-foreground">{ROLE_LABELS[agent.role]}</p>
 

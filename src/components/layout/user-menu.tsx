@@ -2,6 +2,7 @@
 
 import { LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,36 +22,38 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ collapsed }: UserMenuProps) {
-  const trigger = (
-    <DropdownMenuTrigger asChild>
-      <button
-        aria-label="사용자 메뉴"
-        className={cn(
-          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          collapsed && "justify-center px-2"
-        )}
-      >
-        <Avatar className="h-7 w-7 shrink-0">
-          <AvatarFallback className="text-xs">
-            <User className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
-        {!collapsed && (
-          <span className="truncate text-muted-foreground">Account</span>
-        )}
-      </button>
-    </DropdownMenuTrigger>
+  const { signOut } = useAuth();
+
+  const triggerButton = (
+    <button
+      aria-label="사용자 메뉴"
+      className={cn(
+        "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 min-h-[44px] hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        collapsed && "justify-center px-2"
+      )}
+    >
+      <Avatar className="h-7 w-7 shrink-0">
+        <AvatarFallback className="text-xs">
+          <User className="h-4 w-4" />
+        </AvatarFallback>
+      </Avatar>
+      {!collapsed && (
+        <span className="truncate text-muted-foreground">Account</span>
+      )}
+    </button>
   );
 
-  const menu = (
+  return (
     <DropdownMenu>
       {collapsed ? (
         <Tooltip>
-          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
+          </TooltipTrigger>
           <TooltipContent side="right">Account</TooltipContent>
         </Tooltip>
       ) : (
-        trigger
+        <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
       )}
       <DropdownMenuContent side="top" align="start" className="w-48">
         <DropdownMenuItem disabled>
@@ -58,13 +61,11 @@ export function UserMenu({ collapsed }: UserMenuProps) {
           Profile
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={signOut}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-
-  return menu;
 }

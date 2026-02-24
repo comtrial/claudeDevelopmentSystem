@@ -204,3 +204,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide scrollbar for horizontally scrollable tabs on mobile */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

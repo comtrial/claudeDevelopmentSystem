@@ -19,11 +19,11 @@ export function ExecutionSummary() {
     .join(", ");
 
   return (
-    <div className="rounded-lg border bg-surface/50 p-4">
+    <div className="rounded-lg border bg-surface/50 p-3 sm:p-4">
       <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         실행 요약
       </h4>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm sm:gap-x-4">
         <dt className="text-muted-foreground">작업 수</dt>
         <dd className="font-medium">{tasks.length}개</dd>
 

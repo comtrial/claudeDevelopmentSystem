@@ -81,7 +81,7 @@ export function ReviewActions({ pipelineId, changeId, currentStatus, onStatusCha
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {/* 승인 버튼 */}
         <Button
           size="sm"
