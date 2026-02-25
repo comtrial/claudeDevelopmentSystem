@@ -1344,13 +1344,24 @@ async function runGeneralMode(
         `[GENERAL] Task ${i + 1}/${tasks.length} 시작: ${task.title}`);
 
       // Build per-task prompt with previous results as context
+      // Strategy: full output for the immediately previous task, summaries for older ones
+      // This keeps context manageable (~40K max) instead of unbounded accumulation
       let prompt = `<task title="${task.title}">\n${task.description ?? task.title}\n</task>\n\n`;
 
       if (taskResults.length > 0) {
         prompt += `<previous-results>\n`;
         for (let j = 0; j < taskResults.length; j++) {
-          const prevResult = truncateArtifact(taskResults[j], 30000);
-          prompt += `<result task="${tasks[j].title}">\n${prevResult}\n</result>\n`;
+          const isLastResult = j === taskResults.length - 1;
+          if (isLastResult) {
+            // Most recent task: full output (truncated to 30K)
+            const fullResult = truncateArtifact(taskResults[j], 30000);
+            prompt += `<result task="${tasks[j].title}" type="full">\n${fullResult}\n</result>\n`;
+          } else {
+            // Older tasks: first 2000 chars as summary
+            const summary = taskResults[j].substring(0, 2000)
+              + (taskResults[j].length > 2000 ? `\n... (${taskResults[j].length}자 중 요약)` : "");
+            prompt += `<result task="${tasks[j].title}" type="summary">\n${summary}\n</result>\n`;
+          }
         }
         prompt += `</previous-results>\n\n`;
       }

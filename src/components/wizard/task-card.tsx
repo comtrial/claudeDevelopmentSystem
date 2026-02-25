@@ -76,7 +76,7 @@ export function TaskCard({
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+      <div className="flex shrink-0 flex-col items-center gap-0 opacity-100 sm:flex-row sm:gap-0.5 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
         <Button
           variant="ghost"
           size="icon-xs"

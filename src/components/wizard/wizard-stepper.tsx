@@ -22,7 +22,7 @@ export function WizardStepper({ currentStep, onStepClick }: WizardStepperProps) 
             {index > 0 && (
               <div
                 className={cn(
-                  "h-px w-8 sm:w-12 transition-colors",
+                  "h-px w-5 sm:w-12 transition-colors",
                   isCompleted ? "bg-primary" : "bg-border"
                 )}
               />

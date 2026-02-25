@@ -41,8 +41,21 @@ export function RecommendationBanner() {
   const handleFastPath = async () => {
     if (tasks.length === 0) return;
 
+    const { workingDir, category } = useWizardStore.getState();
+
+    if (category === "development" && !workingDir.trim()) {
+      toast.error("프로젝트 디렉토리를 먼저 지정해주세요.");
+      return;
+    }
+
     setSubmitting(true);
     try {
+      // Save working_dir to recent paths
+      if (workingDir.trim()) {
+        const { saveRecentPath } = await import("./working-dir-input");
+        saveRecentPath(workingDir.trim());
+      }
+
       // 1. Create pipeline with default agents + review mode
       const createRes = await fetch("/api/pipelines", {
         method: "POST",
@@ -52,6 +65,9 @@ export function RecommendationBanner() {
           description: tasks.map((t) => t.title).join(", "),
           mode: "review",
           preset_template_id: recommendation.preset_id,
+          config: {
+            ...(workingDir.trim() ? { working_dir: workingDir.trim() } : {}),
+          },
           tasks: tasks.map((t) => ({
             title: t.title,
             description: t.description,
@@ -86,7 +102,7 @@ export function RecommendationBanner() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-agent-pm/30 bg-agent-pm/5 px-3 py-3 sm:px-4">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-agent-pm/30 bg-agent-pm/5 px-2.5 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
       <Sparkles className="size-4 shrink-0 text-agent-pm" />
       <p className="min-w-0 flex-1 text-sm">
         추천 프리셋:{" "}

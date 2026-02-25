@@ -117,6 +117,7 @@ export default function PipelineMonitorPage() {
   const status = (activePipeline?.status as PipelineStatus) ?? "draft";
   const title = (activePipeline?.title as string) ?? "Pipeline";
   const originalQuery = (activePipeline?.original_query as string | null) ?? null;
+  const pipelineStartedAt = (activePipeline?.started_at as string | null) ?? null;
   const pipelineConfig = (activePipeline?.config as Record<string, unknown> | null) ?? null;
   const analysis = (pipelineConfig?.analysis as { intent?: string; scope?: string; reasoning?: string } | null) ?? null;
 
@@ -300,7 +301,7 @@ export default function PipelineMonitorPage() {
 
       {/* Task progress timeline */}
       {tasks.length > 0 && (
-        <TaskProgressTimeline tasks={tasks} />
+        <TaskProgressTimeline tasks={tasks} startedAt={pipelineStartedAt} />
       )}
 
       {/* Action bar */}

@@ -49,6 +49,7 @@ export interface WizardState {
   analysis: ParseAnalysis | null;
   isSubmitting: boolean;
   originalQuery: string;
+  workingDir: string;
 }
 
 export const WIZARD_STEPS = [

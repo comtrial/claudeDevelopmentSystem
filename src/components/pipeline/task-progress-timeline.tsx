@@ -24,6 +24,7 @@ import type { Task, TaskStatus } from "@/types/pipeline";
 
 interface TaskProgressTimelineProps {
   tasks: Task[];
+  startedAt?: string | null;
 }
 
 const MAX_VISIBLE_DEFAULT = 5;
@@ -109,18 +110,23 @@ function formatElapsedFromMs(diffMs: number): string {
   return `${hours}시간 ${remainMins}분째`;
 }
 
-function ElapsedTimer({ startedAt }: { startedAt: string }) {
-  const calcElapsed = useCallback(
+function useElapsedTimer(startedAt: string) {
+  const calc = useCallback(
     () => formatElapsedFromMs(Date.now() - new Date(startedAt).getTime()),
     [startedAt]
   );
-  const [elapsed, setElapsed] = useState(calcElapsed);
+  const [elapsed, setElapsed] = useState(() => calc());
 
   useEffect(() => {
-    setElapsed(calcElapsed());
-    const id = setInterval(() => setElapsed(calcElapsed()), 1000);
+    const id = setInterval(() => setElapsed(calc()), 1000);
     return () => clearInterval(id);
-  }, [calcElapsed]);
+  }, [calc]);
+
+  return elapsed;
+}
+
+function ElapsedTimer({ startedAt }: { startedAt: string }) {
+  const elapsed = useElapsedTimer(startedAt);
 
   return (
     <span
@@ -129,6 +135,17 @@ function ElapsedTimer({ startedAt }: { startedAt: string }) {
     >
       <Clock className="h-2.5 w-2.5" />
       {elapsed}
+    </span>
+  );
+}
+
+function TotalElapsedTimer({ startedAt }: { startedAt: string }) {
+  const elapsed = useElapsedTimer(startedAt);
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-running/10 px-1.5 py-0.5 text-[11px] font-medium text-running tabular-nums">
+      <Clock className="h-3 w-3" />
+      총 {elapsed}
     </span>
   );
 }
@@ -306,7 +323,7 @@ function TaskNode({
   );
 }
 
-export function TaskProgressTimeline({ tasks }: TaskProgressTimelineProps) {
+export function TaskProgressTimeline({ tasks, startedAt }: TaskProgressTimelineProps) {
   const [expanded, setExpanded] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
@@ -318,14 +335,24 @@ export function TaskProgressTimeline({ tasks }: TaskProgressTimelineProps) {
   const inProgressCount = sorted.filter((t) => t.status === "in_progress").length;
   const failedCount = sorted.filter((t) => t.status === "failed").length;
 
-  // Calculate total duration for completed pipelines
-  const completedTasks = sorted.filter((t) => t.status === "completed" || t.status === "failed");
+  // Determine pipeline timing
+  const isAllDone = completedCount + failedCount === totalTasks;
+  const isInProgress = inProgressCount > 0;
+
+  // Resolve the pipeline start time: prefer explicit startedAt, fallback to first task
+  const effectiveStartedAt = startedAt ?? (() => {
+    const allTimes = sorted.map((t) => new Date(t.created_at).getTime()).filter((t) => !isNaN(t));
+    return allTimes.length > 0 ? new Date(Math.min(...allTimes)).toISOString() : null;
+  })();
+
+  // Total duration for completed pipelines (static)
   const totalDuration = (() => {
-    if (completedTasks.length === 0) return null;
-    const firstStart = Math.min(...completedTasks.map((t) => new Date(t.created_at).getTime()));
-    const lastEnd = Math.max(...completedTasks.map((t) => new Date(t.updated_at).getTime()));
-    if (isNaN(firstStart) || isNaN(lastEnd)) return null;
-    return formatDuration(new Date(firstStart).toISOString(), new Date(lastEnd).toISOString());
+    if (!isAllDone || !effectiveStartedAt) return null;
+    const finishedTasks = sorted.filter((t) => t.status === "completed" || t.status === "failed");
+    if (finishedTasks.length === 0) return null;
+    const lastEnd = Math.max(...finishedTasks.map((t) => new Date(t.updated_at).getTime()));
+    if (isNaN(lastEnd)) return null;
+    return formatDuration(effectiveStartedAt, new Date(lastEnd).toISOString());
   })();
 
   // Determine visible tasks
@@ -343,16 +370,27 @@ export function TaskProgressTimeline({ tasks }: TaskProgressTimelineProps) {
   return (
     <div data-testid="task-progress-timeline">
       {/* Section header */}
-      <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-        <ListChecks className="h-4 w-4" />
-        태스크 진행 상황
-        <span className="text-xs font-normal normal-case tracking-normal ml-1">
-          {completedCount}/{totalTasks} 완료
-          {inProgressCount > 0 && ` · ${inProgressCount} 진행 중`}
-          {failedCount > 0 && ` · ${failedCount} 실패`}
-          {totalDuration && completedCount === totalTasks && ` · 총 ${totalDuration}`}
-        </span>
-      </h2>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+          <ListChecks className="h-4 w-4" />
+          태스크 진행 상황
+          <span className="text-xs font-normal normal-case tracking-normal ml-1">
+            {completedCount}/{totalTasks} 완료
+            {inProgressCount > 0 && ` · ${inProgressCount} 진행 중`}
+            {failedCount > 0 && ` · ${failedCount} 실패`}
+          </span>
+        </h2>
+        {/* Total elapsed: live timer when running, static when done */}
+        {isInProgress && effectiveStartedAt && (
+          <TotalElapsedTimer startedAt={effectiveStartedAt} />
+        )}
+        {isAllDone && totalDuration && (
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+            <Clock className="h-3 w-3" />
+            총 {totalDuration}
+          </span>
+        )}
+      </div>
 
       {/* Overall task progress bar */}
       <div className="mb-4">

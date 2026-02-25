@@ -86,7 +86,7 @@ export function WizardContainer() {
   );
 
   const handleSubmit = useCallback(async () => {
-    const { tasks, agents, mode, category, originalQuery, analysis } = useWizardStore.getState();
+    const { tasks, agents, mode, category, originalQuery, analysis, workingDir } = useWizardStore.getState();
     setSubmitError(null);
 
     if (tasks.length === 0) {
@@ -94,8 +94,19 @@ export function WizardContainer() {
       return;
     }
 
+    if (category === "development" && !workingDir.trim()) {
+      setSubmitError("개발 카테고리에서는 프로젝트 디렉토리를 지정해야 합니다.");
+      return;
+    }
+
     setSubmitting(true);
     try {
+      // Save working_dir to recent paths
+      if (workingDir.trim()) {
+        const { saveRecentPath } = await import("./working-dir-input");
+        saveRecentPath(workingDir.trim());
+      }
+
       // 1. Create pipeline
       const createRes = await fetch("/api/pipelines", {
         method: "POST",
@@ -105,7 +116,11 @@ export function WizardContainer() {
           description: tasks.map((t) => t.title).join(", "),
           original_query: originalQuery || null,
           mode: MODE_TO_DB[mode],
-          config: { ...(analysis ? { analysis } : {}), category },
+          config: {
+            ...(analysis ? { analysis } : {}),
+            category,
+            ...(workingDir.trim() ? { working_dir: workingDir.trim() } : {}),
+          },
           tasks: tasks.map((t) => ({
             title: t.title,
             description: t.description,
@@ -155,7 +170,7 @@ export function WizardContainer() {
   const StepComponent = stepComponents[currentStep];
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 sm:gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold tracking-tight sm:text-2xl">새 파이프라인</h1>
         <WizardStepper currentStep={currentStep} onStepClick={handleStepClick} />

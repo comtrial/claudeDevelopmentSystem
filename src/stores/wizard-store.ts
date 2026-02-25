@@ -21,6 +21,7 @@ interface WizardActions {
   setAnalysis: (analysis: ParseAnalysis | null) => void;
   setSubmitting: (isSubmitting: boolean) => void;
   setOriginalQuery: (query: string) => void;
+  setWorkingDir: (dir: string) => void;
   reset: () => void;
 }
 
@@ -36,6 +37,7 @@ const initialState: WizardState = {
   analysis: null,
   isSubmitting: false,
   originalQuery: "",
+  workingDir: "",
 };
 
 export const useWizardStore = create<WizardStore>()(
@@ -79,6 +81,10 @@ export const useWizardStore = create<WizardStore>()(
         set({ originalQuery }, false, "setOriginalQuery");
       },
 
+      setWorkingDir: (workingDir) => {
+        set({ workingDir }, false, "setWorkingDir");
+      },
+
       reset: () => {
         set(initialState, false, "reset");
       },
@@ -97,5 +103,6 @@ export const selectRecommendation = (state: WizardStore) => state.recommendation
 export const selectAnalysis = (state: WizardStore) => state.analysis;
 export const selectIsSubmitting = (state: WizardStore) => state.isSubmitting;
 export const selectOriginalQuery = (state: WizardStore) => state.originalQuery;
+export const selectWorkingDir = (state: WizardStore) => state.workingDir;
 export const selectHasUnsavedChanges = (state: WizardStore) =>
-  state.tasks.length > 0 || state.agents.length > 0;
+  state.workingDir.length > 0 || state.tasks.length > 0 || state.agents.length > 0;
