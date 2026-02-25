@@ -1,0 +1,82 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tail:*)",
+      "Bash(head:*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/log-event.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/notify.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/langfuse-trace.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/cost-tracker.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/log-event.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/notify.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/log-event.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/log-event.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/notify.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/langfuse-trace.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/choeseung-won/personal-project/claudeDevelopmentSystem/.claude/hooks/cost-tracker.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
