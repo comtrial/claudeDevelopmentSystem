@@ -9,6 +9,8 @@ import type {
   PipelineModeType,
   PipelineCategoryType,
   Recommendation,
+  InputSourceType,
+  NotionPageSelection,
 } from "@/types/wizard";
 
 interface WizardActions {
@@ -22,6 +24,8 @@ interface WizardActions {
   setSubmitting: (isSubmitting: boolean) => void;
   setOriginalQuery: (query: string) => void;
   setWorkingDir: (dir: string) => void;
+  setInputSource: (source: InputSourceType) => void;
+  setNotionPage: (page: NotionPageSelection | null) => void;
   reset: () => void;
 }
 
@@ -38,6 +42,8 @@ const initialState: WizardState = {
   isSubmitting: false,
   originalQuery: "",
   workingDir: "",
+  inputSource: "direct" as InputSourceType,
+  notionPage: null,
 };
 
 export const useWizardStore = create<WizardStore>()(
@@ -85,6 +91,14 @@ export const useWizardStore = create<WizardStore>()(
         set({ workingDir }, false, "setWorkingDir");
       },
 
+      setInputSource: (inputSource) => {
+        set({ inputSource }, false, "setInputSource");
+      },
+
+      setNotionPage: (notionPage) => {
+        set({ notionPage }, false, "setNotionPage");
+      },
+
       reset: () => {
         set(initialState, false, "reset");
       },
@@ -104,5 +118,7 @@ export const selectAnalysis = (state: WizardStore) => state.analysis;
 export const selectIsSubmitting = (state: WizardStore) => state.isSubmitting;
 export const selectOriginalQuery = (state: WizardStore) => state.originalQuery;
 export const selectWorkingDir = (state: WizardStore) => state.workingDir;
+export const selectInputSource = (state: WizardStore) => state.inputSource;
+export const selectNotionPage = (state: WizardStore) => state.notionPage;
 export const selectHasUnsavedChanges = (state: WizardStore) =>
   state.workingDir.length > 0 || state.tasks.length > 0 || state.agents.length > 0;

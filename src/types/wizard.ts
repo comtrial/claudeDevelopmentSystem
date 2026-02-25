@@ -50,6 +50,16 @@ export interface WizardState {
   isSubmitting: boolean;
   originalQuery: string;
   workingDir: string;
+  inputSource: InputSourceType;
+  notionPage: NotionPageSelection | null;
+}
+
+export type InputSourceType = "direct" | "notion";
+
+export interface NotionPageSelection {
+  pageId: string;
+  pageTitle: string;
+  pageContent: string;
 }
 
 export const WIZARD_STEPS = [

@@ -15,6 +15,7 @@
     "test:report": "playwright show-report e2e/reports"
   },
   "dependencies": {
+    "@notionhq/client": "^5.9.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "@tanstack/react-virtual": "^3.13.18",

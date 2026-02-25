@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Loader2, Wand2, Code, FileText } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Wand2, Code, FileText, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +15,9 @@ import { TaskCardList } from "./task-card-list";
 import { RecommendationBanner } from "./recommendation-banner";
 import { WorkingDirInput } from "./working-dir-input";
 import { TaskEmptyState } from "./task-empty-state";
+import { InputSourceSelector } from "./input-source-selector";
+import { NotionPageList } from "./notion-page-list";
+import { NotionPagePreview } from "./notion-page-preview";
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 2000;
@@ -29,22 +33,78 @@ export function StepTaskInput() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNotionPageId, setSelectedNotionPageId] = useState<string | null>(null);
+  const [selectedNotionTitle, setSelectedNotionTitle] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const category = useWizardStore((s) => s.category);
   const workingDir = useWizardStore((s) => s.workingDir);
   const tasks = useWizardStore((s) => s.tasks);
+  const inputSource = useWizardStore((s) => s.inputSource);
+  const notionPage = useWizardStore((s) => s.notionPage);
   const setCategory = useWizardStore((s) => s.setCategory);
   const setTasks = useWizardStore((s) => s.setTasks);
   const setRecommendation = useWizardStore((s) => s.setRecommendation);
   const setAnalysis = useWizardStore((s) => s.setAnalysis);
   const setOriginalQuery = useWizardStore((s) => s.setOriginalQuery);
+  const setInputSource = useWizardStore((s) => s.setInputSource);
+  const setNotionPage = useWizardStore((s) => s.setNotionPage);
 
-  const trimmed = input.trim();
+  // Determine the effective input text based on source
+  const effectiveInput = inputSource === "notion" && notionPage
+    ? notionPage.pageContent
+    : input;
+  const trimmed = effectiveInput.trim();
   const isTooShort = trimmed.length > 0 && trimmed.length < MIN_LENGTH;
   const needsWorkingDir = category === "development" && !workingDir.trim();
   const canAnalyze = trimmed.length >= MIN_LENGTH && !needsWorkingDir && !isLoading;
+
+  // Handle input source change — clear the other source's data
+  const handleInputSourceChange = useCallback(
+    (source: "direct" | "notion") => {
+      setInputSource(source);
+      if (source === "direct") {
+        setNotionPage(null);
+        setSelectedNotionPageId(null);
+        setSelectedNotionTitle("");
+      } else {
+        setInput("");
+      }
+    },
+    [setInputSource, setNotionPage]
+  );
+
+  // Handle Notion page selection from list
+  const handleNotionPageSelect = useCallback((pageId: string, title: string) => {
+    setSelectedNotionPageId(pageId);
+    setSelectedNotionTitle(title);
+  }, []);
+
+  // Handle Notion page content confirmation from preview
+  const handleNotionConfirm = useCallback(
+    (content: string) => {
+      setNotionPage({
+        pageId: selectedNotionPageId!,
+        pageTitle: selectedNotionTitle,
+        pageContent: content,
+      });
+    },
+    [selectedNotionPageId, selectedNotionTitle, setNotionPage]
+  );
+
+  // Handle going back from preview to list
+  const handleNotionBack = useCallback(() => {
+    setSelectedNotionPageId(null);
+    setSelectedNotionTitle("");
+  }, []);
+
+  // Clear confirmed Notion page to re-select
+  const handleNotionClear = useCallback(() => {
+    setNotionPage(null);
+    setSelectedNotionPageId(null);
+    setSelectedNotionTitle("");
+  }, [setNotionPage]);
 
   const handleParse = useCallback(async () => {
     if (!canAnalyze) return;
@@ -59,7 +119,7 @@ export function StepTaskInput() {
       const res = await fetch("/api/pipelines/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: input.trim() }),
+        body: JSON.stringify({ input: trimmed }),
         signal: controller.signal,
       });
 
@@ -74,7 +134,7 @@ export function StepTaskInput() {
         setTasks(json.data.tasks);
         setRecommendation(json.data.recommendation);
         setAnalysis(json.data.analysis ?? null);
-        setOriginalQuery(input.trim());
+        setOriginalQuery(trimmed);
 
         // Scroll results into view
         setTimeout(() => {
@@ -91,7 +151,7 @@ export function StepTaskInput() {
       clearTimeout(timeout);
       setIsLoading(false);
     }
-  }, [canAnalyze, input, setTasks, setRecommendation, setAnalysis, setOriginalQuery]);
+  }, [canAnalyze, trimmed, setTasks, setRecommendation, setAnalysis, setOriginalQuery]);
 
   // Cmd+Enter keyboard shortcut
   useEffect(() => {
@@ -147,27 +207,93 @@ export function StepTaskInput() {
           {/* Working directory (development only) */}
           <WorkingDirInput />
 
-          {/* Task description textarea */}
+          {/* Input source selector */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-sm font-medium">작업 설명</Label>
-            <div className="relative">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={placeholder}
-                maxLength={MAX_LENGTH}
-                rows={3}
-                disabled={isLoading}
-                className="w-full resize-none rounded-lg border bg-background px-3 py-2.5 text-base placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50 sm:px-4 sm:py-3 sm:text-sm"
-              />
-              {showCharCount && (
-                <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">
-                  {input.length}/{MAX_LENGTH}
-                </span>
-              )}
-            </div>
+            <Label className="text-sm font-medium">입력 방식</Label>
+            <InputSourceSelector
+              value={inputSource}
+              onChange={handleInputSourceChange}
+            />
           </div>
+
+          {/* Task description — Direct input or Notion flow */}
+          <AnimatePresence mode="wait">
+            {inputSource === "direct" ? (
+              <motion.div
+                key="direct"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.12 }}
+                className="flex flex-col gap-1.5"
+              >
+                <Label className="text-sm font-medium">작업 설명</Label>
+                <div className="relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={placeholder}
+                    maxLength={MAX_LENGTH}
+                    rows={3}
+                    disabled={isLoading}
+                    className="w-full resize-none rounded-lg border bg-background px-3 py-2.5 text-base placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50 sm:px-4 sm:py-3 sm:text-sm"
+                  />
+                  {showCharCount && (
+                    <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">
+                      {input.length}/{MAX_LENGTH}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="notion"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.12 }}
+                className="flex flex-col gap-1.5"
+              >
+                <Label className="text-sm font-medium">Notion 문서 선택</Label>
+                {notionPage ? (
+                  /* Confirmed Notion page summary */
+                  <div className="flex items-center gap-3 rounded-lg border border-primary bg-primary/5 p-3 ring-1 ring-primary/30">
+                    <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-primary">
+                        {notionPage.pageTitle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {notionPage.pageContent.length.toLocaleString()}자 로드됨
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={handleNotionClear}
+                    >
+                      변경
+                    </Button>
+                  </div>
+                ) : selectedNotionPageId ? (
+                  /* Preview selected page */
+                  <NotionPagePreview
+                    pageId={selectedNotionPageId}
+                    pageTitle={selectedNotionTitle}
+                    onConfirm={handleNotionConfirm}
+                    onBack={handleNotionBack}
+                  />
+                ) : (
+                  /* Page list */
+                  <NotionPageList
+                    onSelect={handleNotionPageSelect}
+                    selectedPageId={selectedNotionPageId}
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ── Analyze Action Bar ── */}
@@ -198,7 +324,12 @@ export function StepTaskInput() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {isTooShort && (
+            {inputSource === "notion" && !notionPage && (
+              <p className="text-xs text-muted-foreground">
+                Notion 문서를 선택해주세요
+              </p>
+            )}
+            {inputSource === "direct" && isTooShort && (
               <p className="text-xs text-muted-foreground">
                 최소 {MIN_LENGTH}자 이상 ({trimmed.length}/{MIN_LENGTH})
               </p>
