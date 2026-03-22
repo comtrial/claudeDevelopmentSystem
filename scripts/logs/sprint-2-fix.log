@@ -1,0 +1,43 @@
+All done. Here's a summary of what was changed in `src/app/api/pipelines/parse/route.ts`:
+
+1. **Added** `import { spawn } from "child_process"`
+2. **Removed** `CLAUDE_API_URL`, `CLAUDE_MODEL`, `CLAUDE_TIMEOUT_MS` constants
+3. **Removed** `getApiKey()` function (no API key needed)
+4. **Removed** `callClaudeAPI()` function (no direct HTTP call)
+5. **Added** `callClaudeCLI()` — spawns `claude -p <prompt> --output-format json --max-turns 1 --model sonnet` with a 30s timeout
+6. **Updated** `callClaudeWithRetry()` — removed `apiKey` parameter, now calls `callClaudeCLI`
+7. **Updated** POST handler — removed `getApiKey` call, calls `callClaudeWithRetry(input.trim())` directly
+
+TypeScript check passes with 0 errors. The file contains no references to `api.anthropic.com` or `x-api-key`.
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/e2e/authenticated/dashboard.spec.ts
+  43:16  warning  'label' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/src/app/api/pipelines/parse/route.ts
+  61:23  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/src/components/wizard/step-task-input.tsx
+  26:9  warning  'tasks' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/src/hooks/use-auth.ts
+  9:11  warning  'setUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 4 problems (0 errors, 4 warnings)
+
+
+Running 12 tests using 4 workers
+
+  ✓   3 [common] › e2e/common/design-system.spec.ts:19:7 › 디자인 시스템 토큰 › 상태 색상 토큰 6종 (2.8s)
+  ✓   2 [common] › e2e/common/design-system.spec.ts:37:7 › 디자인 시스템 토큰 › 에이전트 색상 토큰 3종 이상 (2.9s)
+  ✓   1 [common] › e2e/common/design-system.spec.ts:50:7 › 테마 시스템 › HTML class 기반 테마 전략 (2.9s)
+  ✓   4 [common] › e2e/common/design-system.spec.ts:8:7 › 디자인 시스템 토큰 › 기본 CSS 변수 (background, foreground) (3.0s)
+  ✓   5 [common] › e2e/common/design-system.spec.ts:58:7 › 폰트 › next/font 커스텀 폰트 적용 (839ms)
+  ✓   7 [common] › e2e/common/design-system.spec.ts:80:7 › 접근성 기본 › html lang 속성 (836ms)
+  ✓   6 [common] › e2e/common/design-system.spec.ts:85:7 › 접근성 기본 › viewport meta 태그 (782ms)
+  ✓   8 [common] › e2e/common/design-system.spec.ts:89:7 › 접근성 기본 › label 요소 존재 (input 연관) (879ms)
+  ✓  10 [common] › e2e/common/design-system.spec.ts:100:7 › 정적 페이지 응답 › GET /signup → 200 (258ms)
+  ✓   9 [common] › e2e/common/design-system.spec.ts:96:7 › 정적 페이지 응답 › GET /login → 200 (326ms)
+  ✓  12 [common] › e2e/common/design-system.spec.ts:119:7 › 네비게이션 › 로그인 ↔ 회원가입 페이지 왕복 (1.4s)
+  ✓  11 [common] › e2e/common/design-system.spec.ts:106:7 › API 응답 형식 › 에러 응답 표준 포맷 { data, error, status } (1.5s)
+
+  12 passed (8.9s)

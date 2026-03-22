@@ -1,0 +1,83 @@
+Sprint 3 is complete. Here's a summary of everything implemented:
+
+---
+
+## Sprint 3 — Summary
+
+### Backend (BE)
+
+**BE-3.1 — Pipeline state API**
+- `pause/route.ts` — running → paused
+- `resume/route.ts` — paused → running
+- `cancel/route.ts` — running|paused → cancelled (with AlertDialog confirmation pattern)
+- Updated `execute/route.ts` — now also allows `failed` pipelines to re-execute, and points to the new enhanced simulator
+- Updated `[id]/route.ts` — GET now includes sessions join for progress data
+
+**BE-3.2 — Logs API** (`pipelines/[id]/logs/route.ts`)
+- Cursor-based pagination (keyset via `created_at`)
+- Filters: `agent_id`, `level`, `limit` (max 200)
+- Resolves logs via latest session for the pipeline
+
+**BE-3.3 — Token management** (`sessions/[id]/tokens/route.ts`)
+- PATCH with `{ tokensToAdd }`, increments usage, sets session `status=warning` at ≥90%
+
+**BE-3.4 — Enhanced simulator** (`lib/simulator/agent-simulator.ts`)
+- Configurable speed (slow/normal/fast: 3000/1000/300ms)
+- Realistic Korean log messages per role (pm, engineer, reviewer, planner, tester)
+- Progressive progress + token updates per log step
+- Sample `code_changes` inserted on completion
+- `stopSimulation()` for cancellation
+- `api/dev/simulate/route.ts` — dev-only POST/DELETE endpoint
+
+### Frontend (FE)
+
+**FE-3.1 — Monitoring page** (`pipelines/[id]/page.tsx`)
+- 3-tier layout: title+status badge → overall progress bar → agent grid
+- Session token gauge, action bar, togglable log viewer
+
+**FE-3.2 — AgentStatusCard** — animated status indicator (ping animation for active), progress bar, role icon, token usage tooltip
+
+**FE-3.3 — SessionLifetimeGauge** — 4-color policy (green/yellow/orange/red), inline warnings, sonner Toast at 80%, AlertDialog modal at 90%
+
+**FE-3.4 — `usePipelineRealtime`** — 3 Supabase Realtime channels (pipeline/agents/logs), connection status tracking, automatic cleanup
+
+**FE-3.5 — LogViewer** — virtual scroll via `@tanstack/react-virtual` (handles 10k+ logs), auto-scroll toggle, debounced search, agent/level filters
+
+**FE-3.6 — PipelineControls** — Pause/Resume/Cancel buttons, cancel requires AlertDialog confirmation, loading states, error toasts
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/src/components/pipeline/log-viewer.tsx:118:26
+  116 |   // Virtual scroll setup
+  117 |   const parentRef = useRef<HTMLDivElement>(null);
+> 118 |   const rowVirtualizer = useVirtualizer({
+      |                          ^^^^^^^^^^^^^^ TanStack Virtual's `useVirtualizer()` API returns functions that cannot be memoized safely
+  119 |     count: filteredLogs.length,
+  120 |     getScrollElement: () => parentRef.current,
+  121 |     estimateSize: () => 36,  react-hooks/incompatible-library
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/src/components/wizard/step-task-input.tsx
+  26:9  warning  'tasks' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/choeseung-won/personal-project/claudeDevelopmentSystem/src/hooks/use-auth.ts
+  9:11  warning  'setUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (0 errors, 5 warnings)
+
+
+Running 12 tests using 4 workers
+
+  ✓   4 [common] › e2e/common/design-system.spec.ts:8:7 › 디자인 시스템 토큰 › 기본 CSS 변수 (background, foreground) (2.7s)
+  ✓   3 [common] › e2e/common/design-system.spec.ts:19:7 › 디자인 시스템 토큰 › 상태 색상 토큰 6종 (2.8s)
+  ✓   2 [common] › e2e/common/design-system.spec.ts:37:7 › 디자인 시스템 토큰 › 에이전트 색상 토큰 3종 이상 (2.8s)
+  ✓   1 [common] › e2e/common/design-system.spec.ts:50:7 › 테마 시스템 › HTML class 기반 테마 전략 (2.9s)
+  ✓   5 [common] › e2e/common/design-system.spec.ts:58:7 › 폰트 › next/font 커스텀 폰트 적용 (893ms)
+  ✓   8 [common] › e2e/common/design-system.spec.ts:89:7 › 접근성 기본 › label 요소 존재 (input 연관) (955ms)
+  ✓   7 [common] › e2e/common/design-system.spec.ts:85:7 › 접근성 기본 › viewport meta 태그 (1.0s)
+  ✓   6 [common] › e2e/common/design-system.spec.ts:80:7 › 접근성 기본 › html lang 속성 (1.0s)
+  ✓   9 [common] › e2e/common/design-system.spec.ts:96:7 › 정적 페이지 응답 › GET /login → 200 (379ms)
+  ✓  10 [common] › e2e/common/design-system.spec.ts:100:7 › 정적 페이지 응답 › GET /signup → 200 (244ms)
+  ✓  12 [common] › e2e/common/design-system.spec.ts:119:7 › 네비게이션 › 로그인 ↔ 회원가입 페이지 왕복 (1.0s)
+  ✓  11 [common] › e2e/common/design-system.spec.ts:106:7 › API 응답 형식 › 에러 응답 표준 포맷 { data, error, status } (1.2s)
+
+  12 passed (8.1s)
